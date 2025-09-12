@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Legally Bourne",
-  description: "Your legal companion application",
+  description: "Need help with a legal issue? No lawyer? No problem.",
 };
 
 export default function RootLayout({
