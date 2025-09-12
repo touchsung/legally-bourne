@@ -35,7 +35,7 @@ export function HowItWorksSection() {
           {steps.map((step, index) => (
             <div key={index} className="text-center">
               <div className="bg-blue-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <step.icon className="w-10 h-10 text-blue-600" />
+                <step.icon className="w-8 h-8 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">
                 {step.title}
