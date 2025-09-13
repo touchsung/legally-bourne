@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
 
 export function HeroSection() {
   const benefits = [
@@ -10,31 +9,29 @@ export function HeroSection() {
   ];
 
   return (
-    <div className="bg-gradient-to-r from-sky-400 to-blue-500 py-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
-          Need help with a legal issue?
+    <div className="bg-gradient-to-r from-blue-400 to-blue-600 py-20 text-white">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 className="text-4xl md:text-5xl font-bold mb-4">
+          Need Help with a Legal Issue?
         </h1>
 
-        <p className="text-xl text-white/90 mb-12 max-w-2xl mx-auto">
-          No lawyer? No problem.
-        </p>
+        <p className="text-lg mb-8 opacity-90">No Lawyer? No Problem</p>
 
         <Button
           size="lg"
-          className="bg-white text-blue-600 hover:bg-gray-50 px-8 py-4 text-lg font-semibold mb-16"
+          className="bg-white text-blue-600 hover:bg-gray-50 px-8 py-3 text-lg font-semibold mb-12 rounded-full"
         >
           Start My Case
         </Button>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+        <div className="space-y-2">
           {benefits.map((benefit, index) => (
             <div
               key={index}
-              className="flex items-center justify-center space-x-3"
+              className="flex items-center justify-center space-x-2"
             >
-              <Check className="h-6 w-6 text-white flex-shrink-0 mt-0.5" />
-              <span className="text-white font-medium">{benefit}</span>
+              <span className="text-green-300">✓</span>
+              <span className="text-sm">{benefit}</span>
             </div>
           ))}
         </div>

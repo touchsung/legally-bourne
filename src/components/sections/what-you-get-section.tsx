@@ -1,11 +1,4 @@
-import {
-  DollarSign,
-  Bot,
-  RotateCcw,
-  Eye,
-  FileText,
-  Calendar,
-} from "lucide-react";
+import { DollarSign, Bot, RotateCcw, Eye, Mail, BarChart } from "lucide-react";
 
 export function WhatYouGetSection() {
   const features = [
@@ -30,41 +23,37 @@ export function WhatYouGetSection() {
       description: "Understand your legal position in plain English",
     },
     {
-      icon: FileText,
+      icon: Mail,
       title: "Instant draft letters",
       description: "Generate professional legal documents in minutes",
     },
     {
-      icon: Calendar,
+      icon: BarChart,
       title: "Case timeline builder",
       description: "Track important dates and deadlines in one place",
     },
   ];
 
   return (
-    <div className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            What you get
-          </h2>
-          <p className="text-xl text-gray-600">
-            Everything you need to handle legal issues confidently
-          </p>
-        </div>
+    <div className="py-16 bg-white">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 className="text-3xl font-bold text-center text-blue-600 mb-12">
+          What you get
+        </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
-            <div key={index} className="text-center">
-              <div className="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <feature.icon className="w-8 h-8 text-blue-600" />
+            <div
+              key={index}
+              className="border border-gray-200 rounded-lg p-6 text-center hover:shadow-md transition-shadow"
+            >
+              <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <feature.icon className="w-6 h-6 text-blue-600" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 {feature.title}
               </h3>
-              <p className="text-gray-600 leading-relaxed">
-                {feature.description}
-              </p>
+              <p className="text-sm text-gray-600">{feature.description}</p>
             </div>
           ))}
         </div>

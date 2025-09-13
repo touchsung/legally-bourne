@@ -1,46 +1,52 @@
-import { MessageCircle, HelpCircle, FileText } from "lucide-react";
+import { Search, FileEdit, Shield } from "lucide-react";
 
 export function HowItWorksSection() {
   const steps = [
     {
-      icon: MessageCircle,
-      title: "Pick your issue",
-      description: "Tell us what's happening in plain English",
+      number: 1,
+      icon: Search,
+      title: "Pick Your Issue",
     },
     {
-      icon: HelpCircle,
+      number: 2,
+      icon: FileEdit,
       title: "Answer a few questions",
-      description: "We'll guide you through the details we need",
     },
     {
-      icon: FileText,
-      title: "Get guided help or draft",
-      description: "Receive personalized legal documents and next steps",
+      number: 3,
+      icon: Shield,
+      title: "Get guide help or legal draft",
     },
   ];
 
   return (
-    <div className="py-20 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            How it works
-          </h2>
-          <p className="text-xl text-gray-600">
-            Get legal help in three simple steps
-          </p>
-        </div>
+    <div className="py-16 bg-gray-50">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 className="text-4xl font-bold text-center text-blue-500 mb-16">
+          How it Works
+        </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-          {steps.map((step, index) => (
-            <div key={index} className="text-center">
-              <div className="bg-blue-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <step.icon className="w-8 h-8 text-blue-600" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-16 items-end">
+          {steps.map((step) => (
+            <div key={step.number} className="flex flex-col items-center">
+              <div className="bg-blue-50 w-32 h-32 rounded-3xl flex items-center justify-center mb-8">
+                <step.icon
+                  className="w-16 h-16 text-gray-800"
+                  strokeWidth={1.5}
+                />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                {step.title}
-              </h3>
-              <p className="text-gray-600">{step.description}</p>
+
+              <div className="border border-blue-400 rounded-full px-6 py-3 mb-6 bg-white h-16 flex items-center justify-center w-80">
+                <span className="text-base font-medium text-gray-800 text-center leading-tight">
+                  {step.title}
+                </span>
+              </div>
+
+              <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-2xl">
+                  {step.number}
+                </span>
+              </div>
             </div>
           ))}
         </div>
