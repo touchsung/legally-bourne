@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Info, Calendar, FileText, AlertCircle } from "lucide-react";
+import { Calendar, FileText, AlertCircle } from "lucide-react";
 
 interface TimelineEvent {
   date: string;
@@ -18,55 +17,11 @@ interface AISummaryData {
 }
 
 interface AISummaryProps {
-  messages: Array<{ role: string; content: string }>;
-  selectedCaseType: string;
-  selectedCountry: string;
-  isVisible: boolean;
+  summaryData: AISummaryData | null;
 }
 
-export function AISummary({
-  messages,
-  selectedCaseType,
-  selectedCountry,
-  isVisible,
-}: AISummaryProps) {
-  const [summaryData, setSummaryData] = useState<AISummaryData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (isVisible && messages.length > 2) {
-      // Only generate summary after some conversation
-      generateSummary();
-    }
-  }, [messages, isVisible]);
-
-  const generateSummary = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/chat/summary", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages,
-          selectedCaseType,
-          selectedCountry,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSummaryData(data.summary);
-      }
-    } catch (error) {
-      console.error("Failed to generate summary:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (!isVisible || (!summaryData && !isLoading)) return null;
+export function AISummary({ summaryData }: AISummaryProps) {
+  if (!summaryData) return null;
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
@@ -94,35 +49,11 @@ export function AISummary({
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-        <div className="flex items-center space-x-2 mb-3">
-          <div className="w-5 h-5 bg-blue-500 rounded animate-pulse"></div>
-          <h3 className="font-semibold text-gray-900">AI Summary</h3>
-        </div>
-        <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-          <div className="space-y-2">
-            <div className="h-3 bg-gray-200 rounded"></div>
-            <div className="h-3 bg-gray-200 rounded w-4/5"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!summaryData) return null;
-
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200 mb-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center space-x-2">
-          <Info className="w-5 h-5 text-blue-500" />
-          <h3 className="font-semibold text-gray-900">AI Summary</h3>
-        </div>
-        {summaryData.urgency !== "low" && (
+    <div className="p-4">
+      {/* Urgency Badge */}
+      {summaryData.urgency !== "low" && (
+        <div className="mb-4">
           <span
             className={`px-2 py-1 rounded-full text-xs font-medium border ${getUrgencyColor(
               summaryData.urgency
@@ -130,12 +61,12 @@ export function AISummary({
           >
             {summaryData.urgency.toUpperCase()} PRIORITY
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Case Description */}
       <div className="mb-4">
-        <p className="text-sm text-gray-700 font-medium mb-1">
+        <p className="text-sm text-gray-700 font-medium">
           You&apos;re describing {summaryData.caseDescription}.
         </p>
       </div>
