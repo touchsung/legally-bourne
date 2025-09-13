@@ -28,5 +28,4 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   session: {
     strategy: "database",
   },
-  debug: process.env.NODE_ENV === "development",
 });

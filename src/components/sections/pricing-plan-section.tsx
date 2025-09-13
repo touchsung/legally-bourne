@@ -1,10 +1,18 @@
-// src/components/sections/pricing-plan-section.tsx
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Check, X } from "lucide-react";
+import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 export function PricingPlanSection() {
+  const { data: session } = useSession();
+  const [loading, setLoading] = useState<string | null>(null);
+
   const plans = [
     {
+      id: "free",
       title: "Free Forever",
       price: "$0",
       subtitle: "",
@@ -18,6 +26,7 @@ export function PricingPlanSection() {
       cancelAnytime: false,
     },
     {
+      id: "pay-per-letter",
       title: "Pay per letter (One off)",
       price: "$5/mo",
       subtitle: "Perfect if you just need one letter, no subscription.",
@@ -32,6 +41,7 @@ export function PricingPlanSection() {
       cancelAnytime: false,
     },
     {
+      id: "pro",
       title: "Pro",
       price: "$15/mo",
       subtitle: "",
@@ -48,6 +58,7 @@ export function PricingPlanSection() {
       cancelAnytime: true,
     },
     {
+      id: "business",
       title: "Business / SME",
       price: "$39/mo",
       subtitle: "",
@@ -67,6 +78,46 @@ export function PricingPlanSection() {
     },
   ];
 
+  const handlePlanSelect = async (planId: string) => {
+    if (planId === "free") {
+      toast.success("You're already on the free plan!");
+      return;
+    }
+
+    if (!session?.user) {
+      toast.error("Please sign in to subscribe");
+      return;
+    }
+
+    setLoading(planId);
+
+    try {
+      const response = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ planId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create checkout session");
+      }
+
+      // Redirect to Stripe Checkout
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+      toast.error("Failed to start checkout process");
+    } finally {
+      setLoading(null);
+    }
+  };
+
   return (
     <div className="py-16 bg-gradient-to-r from-blue-400 to-blue-600 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -78,9 +129,9 @@ export function PricingPlanSection() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {plans.map((plan, index) => (
+          {plans.map((plan) => (
             <div
-              key={index}
+              key={plan.id}
               className="bg-white text-gray-900 rounded-2xl p-6 flex flex-col shadow-lg"
               style={{ minHeight: "500px" }}
             >
@@ -119,10 +170,12 @@ export function PricingPlanSection() {
 
               <div className="mt-auto pt-4">
                 <Button
+                  onClick={() => handlePlanSelect(plan.id)}
+                  disabled={loading === plan.id}
                   className="w-full mb-3 bg-transparent border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white rounded-full py-3"
                   variant="outline"
                 >
-                  {plan.buttonText}
+                  {loading === plan.id ? "Processing..." : plan.buttonText}
                 </Button>
 
                 <div className="h-6 flex items-center justify-center">
