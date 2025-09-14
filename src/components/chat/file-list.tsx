@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   File,
   FileText,
   Image as ImageIcon,
   Trash2,
-  Download,
   Calendar,
   Loader2,
 } from "lucide-react";

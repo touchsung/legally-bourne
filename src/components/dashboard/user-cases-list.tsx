@@ -10,9 +10,15 @@ import {
   AlertTriangle,
   CheckCircle,
   FileText,
+  Edit,
+  Check,
+  X,
+  Loader2,
 } from "lucide-react";
 import { caseTypes } from "@/data/case-types";
 import countries from "@/data/countries.json";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface CaseSummary {
   id: string;
@@ -48,7 +54,76 @@ interface Country {
 }
 
 export function UserCasesList({ cases }: UserCasesListProps) {
+  const [editingCase, setEditingCase] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [savingCase, setSavingCase] = useState<string | null>(null);
+  const [caseTitles, setCaseTitles] = useState<Record<string, string>>(() => {
+    // Initialize with current case titles
+    const initialTitles: Record<string, string> = {};
+    cases.forEach((case_) => {
+      initialTitles[case_.id] = case_.title;
+    });
+    return initialTitles;
+  });
+
   const groupedCases = groupCasesByType(cases);
+
+  const startEditing = (caseId: string, currentTitle: string) => {
+    setEditingCase(caseId);
+    setEditingTitle(currentTitle);
+  };
+
+  const cancelEditing = () => {
+    setEditingCase(null);
+    setEditingTitle("");
+  };
+
+  const saveTitle = async (caseId: string) => {
+    if (!editingTitle.trim()) {
+      toast.error("Case title cannot be empty");
+      return;
+    }
+
+    if (editingTitle === caseTitles[caseId]) {
+      cancelEditing();
+      return;
+    }
+
+    setSavingCase(caseId);
+
+    try {
+      const response = await fetch(`/api/cases/${caseId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: editingTitle.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update case title");
+      }
+
+      // Update the local state
+      setCaseTitles((prev) => ({
+        ...prev,
+        [caseId]: editingTitle.trim(),
+      }));
+
+      cancelEditing();
+      toast.success("Case title updated successfully");
+    } catch (error) {
+      console.error("Error updating case title:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update case title"
+      );
+    } finally {
+      setSavingCase(null);
+    }
+  };
 
   if (cases.length === 0) {
     return <EmptyState />;
@@ -77,6 +152,14 @@ export function UserCasesList({ cases }: UserCasesListProps) {
           key={caseTypeTitle}
           title={caseTypeTitle}
           cases={typeCases}
+          editingCase={editingCase}
+          editingTitle={editingTitle}
+          savingCase={savingCase}
+          caseTitles={caseTitles}
+          onStartEditing={startEditing}
+          onCancelEditing={cancelEditing}
+          onSaveTitle={saveTitle}
+          onTitleChange={setEditingTitle}
         />
       ))}
     </div>
@@ -100,13 +183,31 @@ function EmptyState() {
   );
 }
 
+interface CaseTypeGroupProps {
+  title: string;
+  cases: CaseWithDetails[];
+  editingCase: string | null;
+  editingTitle: string;
+  savingCase: string | null;
+  caseTitles: Record<string, string>;
+  onStartEditing: (caseId: string, currentTitle: string) => void;
+  onCancelEditing: () => void;
+  onSaveTitle: (caseId: string) => void;
+  onTitleChange: (title: string) => void;
+}
+
 function CaseTypeGroup({
   title,
   cases,
-}: {
-  title: string;
-  cases: CaseWithDetails[];
-}) {
+  editingCase,
+  editingTitle,
+  savingCase,
+  caseTitles,
+  onStartEditing,
+  onCancelEditing,
+  onSaveTitle,
+  onTitleChange,
+}: CaseTypeGroupProps) {
   const firstCase = cases[0];
   const CaseIcon = getCaseTypeIcon(firstCase.caseType);
   const hasHighPriority = cases.some((c) => c.summaries[0]?.urgency === "high");
@@ -149,55 +250,156 @@ function CaseTypeGroup({
 
       <div className="divide-y divide-gray-100">
         {cases.map((case_) => (
-          <CaseCard key={case_.id} case={case_} />
+          <CaseCard
+            key={case_.id}
+            case={case_}
+            isEditing={editingCase === case_.id}
+            editingTitle={editingTitle}
+            isSaving={savingCase === case_.id}
+            currentTitle={caseTitles[case_.id] || case_.title}
+            onStartEditing={onStartEditing}
+            onCancelEditing={onCancelEditing}
+            onSaveTitle={onSaveTitle}
+            onTitleChange={onTitleChange}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function CaseCard({ case: case_ }: { case: CaseWithDetails }) {
+interface CaseCardProps {
+  case: CaseWithDetails;
+  isEditing: boolean;
+  editingTitle: string;
+  isSaving: boolean;
+  currentTitle: string;
+  onStartEditing: (caseId: string, currentTitle: string) => void;
+  onCancelEditing: () => void;
+  onSaveTitle: (caseId: string) => void;
+  onTitleChange: (title: string) => void;
+}
+
+function CaseCard({
+  case: case_,
+  isEditing,
+  editingTitle,
+  isSaving,
+  currentTitle,
+  onStartEditing,
+  onCancelEditing,
+  onSaveTitle,
+  onTitleChange,
+}: CaseCardProps) {
   const latestSummary = case_.summaries[0];
   const countryName = getCountryName(case_.country);
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      onSaveTitle(case_.id);
+    } else if (e.key === "Escape") {
+      onCancelEditing();
+    }
+  };
 
   return (
     <div className="p-6 hover:bg-gray-50 transition-colors">
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-2 mb-2">
-            <h4 className="text-base font-medium text-gray-900 truncate">
-              {case_.title}
-            </h4>
-            <StatusBadge status={case_.status} />
-            {latestSummary?.urgency && (
-              <UrgencyBadge urgency={latestSummary.urgency} />
+            {isEditing ? (
+              <div className="flex items-center space-x-2 flex-1">
+                <input
+                  type="text"
+                  value={editingTitle}
+                  onChange={(e) => onTitleChange(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  className="flex-1 px-2 py-1 text-base font-medium text-gray-900 border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter case title"
+                  autoFocus
+                  disabled={isSaving}
+                />
+                <div className="flex items-center space-x-1">
+                  <Button
+                    onClick={() => onSaveTitle(case_.id)}
+                    disabled={isSaving || !editingTitle.trim()}
+                    size="sm"
+                    className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700"
+                  >
+                    {isSaving ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Check className="w-3 h-3" />
+                    )}
+                  </Button>
+                  <Button
+                    onClick={onCancelEditing}
+                    disabled={isSaving}
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-8 p-0"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2 flex-1 group">
+                <h4 className="text-base font-medium text-gray-900 truncate">
+                  {currentTitle}
+                </h4>
+                <Button
+                  onClick={() => onStartEditing(case_.id, currentTitle)}
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-200"
+                  title="Edit case title"
+                >
+                  <Edit className="w-3 h-3" />
+                </Button>
+              </div>
+            )}
+
+            {!isEditing && (
+              <>
+                <StatusBadge status={case_.status} />
+                {latestSummary?.urgency && (
+                  <UrgencyBadge urgency={latestSummary.urgency} />
+                )}
+              </>
             )}
           </div>
 
-          <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
-            <span className="flex items-center">
-              <MessageSquare className="w-4 h-4 mr-1" />
-              {case_._count.messages} messages
-            </span>
-            <span>📍 {countryName}</span>
-            <span>
-              Updated{" "}
-              {formatDistanceToNow(new Date(case_.updatedAt), {
-                addSuffix: true,
-              })}
-            </span>
+          {!isEditing && (
+            <>
+              <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+                <span className="flex items-center">
+                  <MessageSquare className="w-4 h-4 mr-1" />
+                  {case_._count.messages} messages
+                </span>
+                <span>📍 {countryName}</span>
+                <span>
+                  Updated{" "}
+                  {formatDistanceToNow(new Date(case_.updatedAt), {
+                    addSuffix: true,
+                  })}
+                </span>
+              </div>
+
+              {latestSummary && <SummaryPreview summary={latestSummary} />}
+            </>
+          )}
+        </div>
+
+        {!isEditing && (
+          <div className="ml-4 flex-shrink-0">
+            <Link href={`/chat/${case_.id}`}>
+              <Button variant="outline" size="sm">
+                Continue
+              </Button>
+            </Link>
           </div>
-
-          {latestSummary && <SummaryPreview summary={latestSummary} />}
-        </div>
-
-        <div className="ml-4 flex-shrink-0">
-          <Link href={`/chat/${case_.id}`}>
-            <Button variant="outline" size="sm">
-              Continue
-            </Button>
-          </Link>
-        </div>
+        )}
       </div>
     </div>
   );

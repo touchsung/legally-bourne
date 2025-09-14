@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LogOut, User } from "lucide-react";
+import Link from "next/link";
 
 interface UserMenuProps {
   user: {
@@ -56,10 +57,12 @@ export function UserMenu({ user }: UserMenuProps) {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <User className="mr-2 h-4 w-4" />
-          Dashboard
-        </DropdownMenuItem>
+        <Link href="/dashboard">
+          <DropdownMenuItem>
+            <User className="mr-2 h-4 w-4" />
+            Dashboard
+          </DropdownMenuItem>
+        </Link>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => signOut({ callbackUrl: "/" })}

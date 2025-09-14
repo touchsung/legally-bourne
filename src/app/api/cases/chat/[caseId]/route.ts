@@ -186,7 +186,7 @@ async function extractPdfText(buffer: ArrayBuffer): Promise<string> {
       .replace(/\s+/g, " ")
       .replace(/([.!?])\s+([A-Z])/g, "$1\n\n$2")
       .trim();
-  } catch (error) {
+  } catch {
     throw new Error("PDF text extraction failed");
   }
 }
@@ -197,7 +197,7 @@ async function extractWordText(buffer: ArrayBuffer): Promise<string> {
     const bufferData = Buffer.from(buffer);
     const result = await mammoth.extractRawText({ buffer: bufferData });
     return result.value;
-  } catch (error) {
+  } catch {
     throw new Error("Word document text extraction failed");
   }
 }
@@ -242,7 +242,7 @@ ${text}
 
 --- END OF PDF DOCUMENT ---`,
         };
-      } catch (pdfError) {
+      } catch {
         return {
           type: "text" as const,
           text: `📄 **${filename}** (PDF Document)
@@ -279,7 +279,7 @@ ${text}
 
 --- END OF WORD DOCUMENT ---`,
         };
-      } catch (wordError) {
+      } catch {
         return {
           type: "text" as const,
           text: `📄 **${filename}** (Word Document)
@@ -319,7 +319,7 @@ ${text}
 
 File uploaded successfully. Please describe the key contents you'd like me to analyze for your legal case.`,
     };
-  } catch (error) {
+  } catch {
     return {
       type: "text" as const,
       text: `❌ **Error processing ${filename}**

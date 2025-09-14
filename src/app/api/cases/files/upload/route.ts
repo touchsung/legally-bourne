@@ -1,9 +1,7 @@
-// src/app/api/cases/files/upload/route.ts - Upload files to Supabase Storage
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@supabase/supabase-js";
-import { z } from "zod";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,7 +48,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate case ownership
     const caseExists = await prisma.case.findFirst({
       where: {
         id: caseId,
@@ -65,7 +62,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { success: false, error: "File size must be less than 10MB" },
@@ -86,9 +82,6 @@ export async function POST(request: NextRequest) {
     const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
     const storagePath = `${session.user.id}/${caseId}/${fileId}/${timestamp}-${sanitizedFilename}`;
 
-    console.log(`📤 Uploading file to Supabase: ${storagePath}`);
-
-    // Upload to Supabase Storage
     const fileBuffer = await file.arrayBuffer();
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from("case-files")
@@ -105,9 +98,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`✅ File uploaded successfully: ${uploadData.path}`);
-
-    // Save file record to database
     const fileRecord = await prisma.caseFile.create({
       data: {
         id: fileId,

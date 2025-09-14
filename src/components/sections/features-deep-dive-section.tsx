@@ -46,11 +46,9 @@ export function FeaturesDeepDiveSection() {
         router.push("/dashboard");
       })
       .with("Contract Letter Builder", () => {
-        // Future implementation when available
         router.push("/contract-builder");
       })
       .with("Deadline Timeline Builder", () => {
-        // Future implementation when available
         router.push("/timeline-builder");
       })
       .otherwise(() => {

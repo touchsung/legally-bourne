@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export function HeroSection() {
   const benefits = [
@@ -9,20 +10,21 @@ export function HeroSection() {
   ];
 
   return (
-    <div className="bg-gradient-to-r from-blue-400 to-blue-600 py-20 text-white">
+    <div className="bg-blue-600 py-20 text-white">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h1 className="text-4xl md:text-5xl font-bold mb-4">
           Need Help with a Legal Issue?
         </h1>
 
         <p className="text-lg mb-8 opacity-90">No Lawyer? No Problem</p>
-
-        <Button
-          size="lg"
-          className="bg-white text-blue-600 hover:bg-gray-50 px-8 py-3 text-lg font-semibold mb-12 rounded-full"
-        >
-          Start My Case
-        </Button>
+        <Link href="chat">
+          <Button
+            size="lg"
+            className="bg-white text-blue-600 hover:bg-gray-50 px-8 py-3 text-lg font-semibold mb-12 rounded-full"
+          >
+            Start My Case
+          </Button>
+        </Link>
 
         <div className="space-y-2">
           {benefits.map((benefit, index) => (

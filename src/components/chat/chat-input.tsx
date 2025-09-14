@@ -126,7 +126,6 @@ export function ChatInput({
 
       handleFileUploaded(uploadedFile);
 
-      // Auto-select the uploaded file
       setSelectedFiles((prev) => [...prev, uploadedFile.id]);
 
       toast.success(`File "${file.name}" uploaded successfully`);
@@ -148,6 +147,7 @@ export function ChatInput({
         uploadFile(file);
       });
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [caseId, handleFileUploaded]
   );
 

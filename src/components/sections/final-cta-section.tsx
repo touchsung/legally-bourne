@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export function FinalCtaSection() {
   return (
@@ -14,13 +15,14 @@ export function FinalCtaSection() {
         <p className="text-lg text-gray-700 mb-8">
           Let Legally Bourne guide you
         </p>
-
-        <Button
-          size="lg"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-semibold rounded-full mb-4"
-        >
-          Start My Case for Free
-        </Button>
+        <Link href="/chat">
+          <Button
+            size="lg"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-semibold rounded-full mb-4"
+          >
+            Start My Case for Free
+          </Button>
+        </Link>
 
         <p className="text-sm text-gray-500">
           Free to start - no payment required for basic assistance
