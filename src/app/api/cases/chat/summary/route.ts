@@ -54,7 +54,7 @@ Based on the conversation about a ${caseType.title} case in ${country.name}, cre
   "caseDescription": "Brief description of the legal issue (e.g., 'a payment dispute', 'an employment termination', 'a tenancy issue')",
   "timelineEvents": [
     {
-      "date": "Date mentioned (e.g., 'June 1st', 'Last month', '3 weeks ago')",
+      "date": "Date mentioned (e.g., 'June 1st', 'Last month', '3 weeks ago') format to YYYY-MM-DD",
       "description": "What happened",
       "type": "payment|communication|legal|deadline|other"
     }
@@ -85,7 +85,6 @@ Return ONLY the JSON object, no additional text.`,
     const completion = await openai.chat.completions.create({
       model: "gpt-4-turbo-preview",
       messages: [systemMessage, ...conversationMessages],
-      max_tokens: 1500,
       temperature: 0.3,
     });
 

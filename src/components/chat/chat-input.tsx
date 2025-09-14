@@ -402,27 +402,25 @@ export function ChatInput({
         />
 
         <div className="flex gap-2">
-          {hasAvailableFiles && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleFileSelector}
-              disabled={isLoading || disabled}
-              className={`px-2 py-2 h-10 ${
-                showFileSelector || selectedFiles.length > 0
-                  ? "bg-blue-50 text-blue-600"
-                  : ""
-              }`}
-              title="Select from uploaded files"
-            >
-              <Paperclip className="h-4 w-4" />
-              {selectedFiles.length > 0 && (
-                <span className="ml-1 text-xs bg-blue-600 text-white rounded-full px-1.5 py-0.5 min-w-[1.25rem] h-5 flex items-center justify-center">
-                  {selectedFiles.length}
-                </span>
-              )}
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleFileSelector}
+            disabled={isLoading || disabled}
+            className={`px-2 py-2 h-10 ${
+              showFileSelector || selectedFiles.length > 0
+                ? "bg-blue-50 text-blue-600"
+                : ""
+            }`}
+            title="Select from uploaded files"
+          >
+            <Paperclip className="h-4 w-4" />
+            {selectedFiles.length > 0 && (
+              <span className="ml-1 text-xs bg-blue-600 text-white rounded-full px-1.5 py-0.5 min-w-[1.25rem] h-5 flex items-center justify-center">
+                {selectedFiles.length}
+              </span>
+            )}
+          </Button>
 
           <textarea
             ref={textareaRef}

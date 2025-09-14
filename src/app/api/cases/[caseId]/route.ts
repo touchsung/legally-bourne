@@ -35,7 +35,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const validatedData = updateCaseSchema.parse(body);
 
-    // Check if the case exists and belongs to the user
     const existingCase = await prisma.case.findFirst({
       where: {
         id: caseId,

@@ -1,4 +1,3 @@
-// src/components/chat/case-chat-interface.tsx - Simplified without top file panel
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -29,6 +28,7 @@ interface UploadedFile {
   uploadedAt: Date;
 }
 
+// Enhanced CaseData interface to include summary from database
 interface CaseData {
   id: string;
   title: string;
@@ -44,6 +44,7 @@ interface CaseData {
     content: string;
     createdAt: Date;
   }>;
+  summary?: CaseSummary | null;
 }
 
 interface CaseChatInterfaceProps {
@@ -64,6 +65,7 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [summaryData, setSummaryData] = useState<CaseSummary | null>(null);
+  const isGenerating = useRef(false);
 
   const selectedCase = caseTypes.find((type) => type.id === caseData.caseType);
   const selectedCountryData = (countries as Country[]).find(
@@ -79,7 +81,7 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
     filename: string;
     filesize: number;
     mimetype: string;
-    uploadedAt: string; // API returns date as string
+    uploadedAt: string;
   }
 
   interface FilesAPIResponse {
@@ -107,35 +109,32 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
     }
   }, [caseData.id]);
 
-  const generateSummary = useCallback(
-    async (messagesToSummarize: ChatMessage[]) => {
-      try {
-        const response = await fetch("/api/cases/chat/summary", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messages: messagesToSummarize.map((msg) => ({
-              role: msg.role,
-              content: msg.content,
-            })),
-            selectedCaseType: caseData.caseType,
-            selectedCountry: caseData.country,
-            caseId: caseData.id,
-          }),
-        });
+  const generateSummary = async (messagesToSummarize: ChatMessage[]) => {
+    try {
+      const response = await fetch("/api/cases/chat/summary", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: messagesToSummarize.map((msg) => ({
+            role: msg.role,
+            content: msg.content,
+          })),
+          selectedCaseType: caseData.caseType,
+          selectedCountry: caseData.country,
+          caseId: caseData.id,
+        }),
+      });
 
-        if (response.ok) {
-          const data = await response.json();
-          setSummaryData(data.summary);
-        }
-      } catch (error) {
-        console.error("Failed to generate summary:", error);
+      if (response.ok) {
+        const data = await response.json();
+        setSummaryData(data.summary);
       }
-    },
-    [caseData.id, caseData.caseType, caseData.country]
-  );
+    } catch (error) {
+      console.error("Failed to generate summary:", error);
+    }
+  };
 
   useEffect(() => {
     const convertedMessages: ChatMessage[] = caseData.messages.map((msg) => ({
@@ -152,14 +151,12 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
     );
     setShowQuickReferences(!hasUserMessages);
 
+    if (caseData.summary) {
+      setSummaryData(caseData.summary);
+    }
+
     fetchFiles();
   }, [caseData, fetchFiles]);
-
-  useEffect(() => {
-    if (messages.length > 2) {
-      void generateSummary(messages);
-    }
-  }, [messages, generateSummary]);
 
   useEffect(() => {
     scrollToBottom();
@@ -228,14 +225,22 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
         content: result.message.content,
         timestamp: new Date(result.message.createdAt),
       };
-
       setMessages((prev) => {
         const withoutTemp = prev.filter((msg) => !msg.id.startsWith("temp-"));
         const realUserMessage = {
           ...userMessage,
           id: `user-${Date.now()}`,
         };
-        return [...withoutTemp, realUserMessage, assistantMessage];
+
+        const newMessages = [...withoutTemp, realUserMessage, assistantMessage];
+
+        if (!isGenerating.current) {
+          isGenerating.current = true;
+          generateSummary(newMessages).finally(() => {
+            isGenerating.current = false;
+          });
+        }
+        return newMessages;
       });
 
       if (fileIds && fileIds.length > 0) {
@@ -268,7 +273,6 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
 
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden h-full flex flex-col">
-      {/* Header */}
       <div className="bg-blue-50 p-3 md:p-4 border-b flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -292,36 +296,35 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
               </p>
             </div>
           </div>
-
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsSummaryCollapsed(!isSummaryCollapsed)}
-              className="p-2 h-auto hover:bg-blue-100 flex items-center space-x-1"
-            >
-              <FileText className="w-4 h-4 text-blue-600" />
-              <span className="text-xs text-blue-600 hidden sm:inline">
-                Summary
-              </span>
-              {isSummaryCollapsed ? (
-                <ChevronDown className="w-4 h-4 text-blue-600" />
-              ) : (
-                <ChevronUp className="w-4 h-4 text-blue-600" />
-              )}
-            </Button>
-          </div>
+          {summaryData && (
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsSummaryCollapsed(!isSummaryCollapsed)}
+                className="p-2 h-auto hover:bg-blue-100 flex items-center space-x-1"
+              >
+                <FileText className="w-4 h-4 text-blue-600" />
+                <span className="text-xs text-blue-600 hidden sm:inline">
+                  Summary
+                </span>
+                {isSummaryCollapsed ? (
+                  <ChevronDown className="w-4 h-4 text-blue-600" />
+                ) : (
+                  <ChevronUp className="w-4 h-4 text-blue-600" />
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Summary Panel */}
-      {!isSummaryCollapsed && (
+      {!isSummaryCollapsed && summaryData && (
         <div className="flex-shrink-0 border-b border-gray-100 bg-blue-50/50 max-h-60 overflow-y-auto">
           <AISummary summaryData={summaryData} />
         </div>
       )}
 
-      {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 min-h-0">
         {messages.length <= 1 && showQuickReferences && (
           <QuickReferences

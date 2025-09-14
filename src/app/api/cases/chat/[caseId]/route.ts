@@ -69,6 +69,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             createdAt: "desc",
           },
         },
+        summaries: {
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 1,
+        },
       },
     });
 
@@ -78,6 +84,30 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         { status: 404 }
       );
     }
+
+    // Get the latest summary if it exists
+    const latestSummary = caseWithMessages.summaries[0];
+
+    // Transform summary data to match the expected format
+    const summaryData = latestSummary
+      ? {
+          id: latestSummary.id,
+          caseId: latestSummary.caseId,
+          caseDescription: latestSummary.caseDescription,
+          timelineEvents: Array.isArray(latestSummary.timelineEvents)
+            ? latestSummary.timelineEvents
+            : [],
+          keyPoints: Array.isArray(latestSummary.keyPoints)
+            ? latestSummary.keyPoints
+            : [],
+          nextSteps: Array.isArray(latestSummary.nextSteps)
+            ? latestSummary.nextSteps
+            : [],
+          urgency: latestSummary.urgency as "low" | "medium" | "high",
+          messageCount: latestSummary.messageCount,
+          createdAt: latestSummary.createdAt,
+        }
+      : null;
 
     return NextResponse.json({
       success: true,
@@ -103,6 +133,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           mimetype: file.mimetype,
           uploadedAt: file.createdAt,
         })),
+        summary: summaryData,
       },
     });
   } catch (error) {

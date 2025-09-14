@@ -74,7 +74,6 @@ Ask specific questions about their ${caseType.title.toLowerCase()} situation to 
     const completion = await openai.chat.completions.create({
       model: "gpt-4-turbo-preview",
       messages: openAIMessages,
-      max_tokens: 1000,
       temperature: 0.7,
     });
 

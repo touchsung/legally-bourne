@@ -54,6 +54,7 @@ export const getCaseResponseSchema = z.object({
   success: z.boolean(),
   case: caseResponseSchema.extend({
     messages: z.array(messageResponseSchema),
+    summary: caseSummarySchema.nullable().optional(),
   }),
   error: z.string().optional(),
 });
