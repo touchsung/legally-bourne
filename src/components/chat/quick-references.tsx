@@ -1,7 +1,5 @@
 "use client";
 
-import { caseTypes } from "@/data/case-types";
-
 interface QuickReference {
   question: string;
   category: string;

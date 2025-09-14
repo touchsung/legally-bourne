@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Account {
@@ -47,6 +48,7 @@ model User {
   sessions     Session[]
   subscription Subscription?
   cases        Case[]
+  CaseFile     CaseFile[]
 }
 
 model Subscription {
@@ -76,6 +78,7 @@ model Case {
   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages  CaseMessage[]
   summaries CaseSummary[]
+  files     CaseFile[]
 
   @@index([userId])
   @@index([status])
@@ -109,4 +112,22 @@ model CaseSummary {
 
   @@index([caseId])
   @@index([createdAt])
+}
+
+model CaseFile {
+  id               String   @id @default(cuid())
+  caseId           String
+  filename         String // Sanitized filename for storage
+  originalFilename String // Original filename shown to user
+  storagePath      String // Full path in Supabase Storage: userId/caseId/fileId/filename
+  filesize         Int
+  mimetype         String
+  uploadedBy       String
+  createdAt        DateTime @default(now())
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([uploadedBy])
 }

@@ -1,3 +1,4 @@
+// src/components/chat/case-chat-interface.tsx - Simplified without top file panel
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -18,6 +19,14 @@ import type { CaseSummary, SendMessageInput } from "@/app/api/cases/schema";
 interface Country {
   code: string;
   name: string;
+}
+
+interface UploadedFile {
+  id: string;
+  filename: string;
+  filesize: number;
+  mimetype: string;
+  uploadedAt: Date;
 }
 
 interface CaseData {
@@ -41,6 +50,10 @@ interface CaseChatInterfaceProps {
   caseData: CaseData;
 }
 
+interface SendMessageWithFilesInput extends SendMessageInput {
+  fileIds?: string[];
+}
+
 export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -48,6 +61,7 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showQuickReferences, setShowQuickReferences] = useState(true);
   const [isSummaryCollapsed, setIsSummaryCollapsed] = useState(true);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [summaryData, setSummaryData] = useState<CaseSummary | null>(null);
 
@@ -59,6 +73,39 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  interface FileFromAPI {
+    id: string;
+    filename: string;
+    filesize: number;
+    mimetype: string;
+    uploadedAt: string; // API returns date as string
+  }
+
+  interface FilesAPIResponse {
+    success: boolean;
+    files: FileFromAPI[];
+  }
+
+  const fetchFiles = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/cases/files/${caseData.id}`);
+
+      if (response.ok) {
+        const result: FilesAPIResponse = await response.json();
+        if (result.success) {
+          setUploadedFiles(
+            result.files.map((file: FileFromAPI) => ({
+              ...file,
+              uploadedAt: new Date(file.uploadedAt),
+            }))
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch files:", error);
+    }
+  }, [caseData.id]);
 
   const generateSummary = useCallback(
     async (messagesToSummarize: ChatMessage[]) => {
@@ -104,7 +151,9 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
       (msg) => msg.role === "user"
     );
     setShowQuickReferences(!hasUserMessages);
-  }, [caseData]);
+
+    fetchFiles();
+  }, [caseData, fetchFiles]);
 
   useEffect(() => {
     if (messages.length > 2) {
@@ -116,18 +165,39 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, fileIds?: string[]) => {
     if (!session?.user) {
       toast.error("Please sign in to continue");
       return;
     }
 
+    if (!content.trim() && (!fileIds || fileIds.length === 0)) {
+      toast.error("Please enter a message or attach files");
+      return;
+    }
+
     setShowQuickReferences(false);
+
+    let displayContent = content || "Analyzing attached documents...";
+    if (fileIds && fileIds.length > 0) {
+      const attachedFileNames = fileIds
+        .map((fileId) => {
+          const file = uploadedFiles.find((f) => f.id === fileId);
+          return file ? file.filename : "Unknown file";
+        })
+        .join(", ");
+
+      if (content.trim()) {
+        displayContent += `\n\n📎 Attached: ${attachedFileNames}`;
+      } else {
+        displayContent = `📎 Analyzing documents: ${attachedFileNames}`;
+      }
+    }
 
     const userMessage: ChatMessage = {
       id: `temp-${Date.now()}`,
       role: "user",
-      content,
+      content: displayContent,
       timestamp: new Date(),
     };
 
@@ -135,7 +205,10 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
     setIsLoading(true);
 
     try {
-      const messageData: SendMessageInput = { message: content };
+      const messageData: SendMessageWithFilesInput = {
+        message: content || "Please analyze these documents:",
+        fileIds: fileIds || [],
+      };
 
       const response = await fetch(`/api/cases/chat/${caseData.id}`, {
         method: "POST",
@@ -164,6 +237,10 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
         };
         return [...withoutTemp, realUserMessage, assistantMessage];
       });
+
+      if (fileIds && fileIds.length > 0) {
+        toast.success(`Analyzed ${fileIds.length} document(s) successfully`);
+      }
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error(
@@ -179,8 +256,19 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
     router.push("/chat");
   };
 
+  const handleFileUploaded = (file: UploadedFile) => {
+    setUploadedFiles((prev) => [file, ...prev]);
+  };
+
+  const availableFiles = uploadedFiles.map((file) => ({
+    id: file.id,
+    filename: file.filename,
+    mimetype: file.mimetype,
+  }));
+
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden h-full flex flex-col">
+      {/* Header */}
       <div className="bg-blue-50 p-3 md:p-4 border-b flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -205,36 +293,40 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
             </div>
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsSummaryCollapsed(!isSummaryCollapsed)}
-            className="p-2 h-auto hover:bg-blue-100 flex items-center space-x-1"
-          >
-            <FileText className="w-4 h-4 text-blue-600" />
-            <span className="text-xs text-blue-600 hidden sm:inline">
-              Summary
-            </span>
-            {isSummaryCollapsed ? (
-              <ChevronDown className="w-4 h-4 text-blue-600" />
-            ) : (
-              <ChevronUp className="w-4 h-4 text-blue-600" />
-            )}
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsSummaryCollapsed(!isSummaryCollapsed)}
+              className="p-2 h-auto hover:bg-blue-100 flex items-center space-x-1"
+            >
+              <FileText className="w-4 h-4 text-blue-600" />
+              <span className="text-xs text-blue-600 hidden sm:inline">
+                Summary
+              </span>
+              {isSummaryCollapsed ? (
+                <ChevronDown className="w-4 h-4 text-blue-600" />
+              ) : (
+                <ChevronUp className="w-4 h-4 text-blue-600" />
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
+      {/* Summary Panel */}
       {!isSummaryCollapsed && (
         <div className="flex-shrink-0 border-b border-gray-100 bg-blue-50/50 max-h-60 overflow-y-auto">
           <AISummary summaryData={summaryData} />
         </div>
       )}
 
+      {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 min-h-0">
         {messages.length <= 1 && showQuickReferences && (
           <QuickReferences
             selectedCaseType={caseData.caseType}
-            onQuestionSelect={handleSendMessage}
+            onQuestionSelect={(question) => handleSendMessage(question)}
             isVisible={showQuickReferences}
           />
         )}
@@ -271,11 +363,15 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Enhanced Chat Input with Integrated File Upload */}
       <div className="flex-shrink-0">
         <ChatInput
+          caseId={caseData.id}
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
           disabled={!session?.user}
+          availableFiles={availableFiles}
+          onFileUploaded={handleFileUploaded}
         />
       </div>
     </div>

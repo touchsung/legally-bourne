@@ -114,7 +114,6 @@ Return ONLY the JSON object, no additional text.`,
     }
     if (caseId && session.user.id) {
       try {
-        // Verify the case belongs to the user before saving
         const caseExists = await prisma.case.findFirst({
           where: {
             id: caseId,
@@ -123,12 +122,10 @@ Return ONLY the JSON object, no additional text.`,
         });
 
         if (caseExists) {
-          // Get message count for this case
           const messageCount = await prisma.caseMessage.count({
             where: { caseId: caseId },
           });
 
-          // Save summary to database
           await prisma.caseSummary.create({
             data: {
               caseId: caseId,
@@ -140,12 +137,9 @@ Return ONLY the JSON object, no additional text.`,
               messageCount: messageCount,
             },
           });
-
-          console.log(`Summary saved to database for case ${caseId}`);
         }
       } catch (dbError) {
         console.error("Failed to save summary to database:", dbError);
-        // Continue anyway - don't fail the request if DB save fails
       }
     }
 
