@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { CurrentPlanCard } from "@/components/dashboard/current-plan-card";
+import { UserCasesList } from "@/components/dashboard/user-cases-list";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -12,37 +13,57 @@ export default async function DashboardPage() {
     redirect("/");
   }
 
-  const subscription = await prisma.subscription.findUnique({
-    where: { userId: session.user.id },
-  });
+  const [subscription, cases] = await Promise.all([
+    prisma.subscription.findUnique({
+      where: { userId: session.user.id },
+    }),
+    prisma.case.findMany({
+      where: { userId: session.user.id },
+      include: {
+        summaries: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
+        _count: {
+          select: { messages: true },
+        },
+      },
+      orderBy: { updatedAt: "desc" },
+    }),
+  ]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
 
-      <div className="flex-1">
+      <main className="flex-1">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
+          <header className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
             <p className="text-gray-600 mt-2">
-              Manage your legal assistance plan
+              Manage your legal assistance plan and cases
             </p>
-          </div>
+          </header>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-              <CurrentPlanCard subscription={subscription} />
+              <UserCasesList cases={cases} />
             </div>
 
-            <div className="space-y-6">
-              <div className="bg-white rounded-lg shadow p-6">
+            <aside className="space-y-6">
+              <CurrentPlanCard subscription={subscription} />
+
+              {/* <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Quick Actions
                 </h3>
                 <div className="space-y-3">
-                  <button className="w-full text-left px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
+                  <Link
+                    href="/chat"
+                    className="w-full text-left px-4 py-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors block"
+                  >
                     Start New Case
-                  </button>
+                  </Link>
                   <button className="w-full text-left px-4 py-3 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
                     Generate Legal Letter
                   </button>
@@ -50,21 +71,32 @@ export default async function DashboardPage() {
                     AI Legal Assistant
                   </button>
                 </div>
-              </div>
+              </div> */}
 
-              <div className="bg-white rounded-lg shadow p-6">
+              {/* <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">
                   Recent Activity
                 </h3>
-                <p className="text-gray-500 text-sm">
-                  No recent activity yet. Start your first case to see your
-                  activity here.
-                </p>
-              </div>
-            </div>
+                {cases.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600">
+                      {cases.length} total case{cases.length !== 1 ? "s" : ""}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Last updated:{" "}
+                      {new Date(cases[0]?.updatedAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">
+                    No cases yet. Start your first case to see activity here.
+                  </p>
+                )}
+              </div> */}
+            </aside>
           </div>
         </div>
-      </div>
+      </main>
 
       <Footer />
     </div>
