@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = { ignoreDuringBuilds: true };
+const nextConfig: NextConfig = {
+  /* config options here */
+};
 
 export default nextConfig;

@@ -120,19 +120,35 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         status: caseWithMessages.status,
         createdAt: caseWithMessages.createdAt,
         updatedAt: caseWithMessages.updatedAt,
-        messages: caseWithMessages.messages.map((msg) => ({
-          id: msg.id,
-          role: msg.role as "user" | "assistant",
-          content: msg.content,
-          createdAt: msg.createdAt,
-        })),
-        files: caseWithMessages.files.map((file) => ({
-          id: file.id,
-          filename: file.originalFilename || file.filename,
-          filesize: file.filesize,
-          mimetype: file.mimetype,
-          uploadedAt: file.createdAt,
-        })),
+        messages: caseWithMessages.messages.map(
+          (msg: {
+            id: string;
+            role: string;
+            content: string;
+            createdAt: Date;
+          }) => ({
+            id: msg.id,
+            role: msg.role as "user" | "assistant",
+            content: msg.content,
+            createdAt: msg.createdAt,
+          })
+        ),
+        files: caseWithMessages.files.map(
+          (file: {
+            id: string;
+            originalFilename: string;
+            filename: string;
+            filesize: number;
+            mimetype: string;
+            createdAt: Date;
+          }) => ({
+            id: file.id,
+            filename: file.originalFilename || file.filename,
+            filesize: file.filesize,
+            mimetype: file.mimetype,
+            uploadedAt: file.createdAt,
+          })
+        ),
         summary: summaryData,
       },
     });
@@ -499,10 +515,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const conversationMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
       [
         systemMessage,
-        ...existingCase.messages.map((msg) => ({
-          role: msg.role as "user" | "assistant",
-          content: msg.content,
-        })),
+        ...existingCase.messages.map(
+          (msg: { role: string; content: string }) => ({
+            role: msg.role as "user" | "assistant",
+            content: msg.content,
+          })
+        ),
         {
           role: "user" as const,
           content: messageContent,

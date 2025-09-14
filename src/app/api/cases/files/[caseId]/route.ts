@@ -54,13 +54,21 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({
       success: true,
-      files: files.map((file) => ({
-        id: file.id,
-        filename: file.filename,
-        filesize: file.filesize,
-        mimetype: file.mimetype,
-        uploadedAt: file.createdAt,
-      })),
+      files: files.map(
+        (file: {
+          id: string;
+          filename: string;
+          filesize: number;
+          mimetype: string;
+          createdAt: Date;
+        }) => ({
+          id: file.id,
+          filename: file.filename,
+          filesize: file.filesize,
+          mimetype: file.mimetype,
+          uploadedAt: file.createdAt,
+        })
+      ),
     });
   } catch (error) {
     console.error("Get files error:", error);
