@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import OpenAI from "openai";
 import countries from "@/data/countries.json";
 import { caseTypes } from "@/data/case-types";
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { messages, selectedCountry, selectedCaseType } =
+    const { messages, selectedCountry, selectedCaseType, caseId } =
       await request.json();
 
     if (!messages || !Array.isArray(messages)) {
@@ -119,6 +120,43 @@ Return ONLY the JSON object, no additional text.`,
       if (!isValidStructure) {
         throw new Error("Invalid summary structure");
       }
+      // Save summary to database if caseId is provided
+      if (caseId && session.user.id) {
+        try {
+          // Verify the case belongs to the user before saving
+          const caseExists = await prisma.case.findFirst({
+            where: {
+              id: caseId,
+              userId: session.user.id,
+            },
+          });
+
+          if (caseExists) {
+            // Get message count for this case
+            const messageCount = await prisma.caseMessage.count({
+              where: { caseId: caseId },
+            });
+
+            // Save summary to database
+            await prisma.caseSummary.create({
+              data: {
+                caseId: caseId,
+                caseDescription: summary.caseDescription,
+                timelineEvents: summary.timelineEvents,
+                keyPoints: summary.keyPoints,
+                nextSteps: summary.nextSteps,
+                urgency: summary.urgency,
+                messageCount: messageCount,
+              },
+            });
+
+            console.log(`Summary saved to database for case ${caseId}`);
+          }
+        } catch (dbError) {
+          console.error("Failed to save summary to database:", dbError);
+          // Continue anyway - don't fail the request if DB save fails
+        }
+      }
 
       return NextResponse.json({ summary });
     } catch (parseError) {
@@ -132,6 +170,45 @@ Return ONLY the JSON object, no additional text.`,
         nextSteps: ["Continue providing more details about your situation"],
         urgency: "medium",
       };
+
+      // Save fallback summary to database if caseId is provided
+      if (caseId && session.user.id) {
+        try {
+          const caseExists = await prisma.case.findFirst({
+            where: {
+              id: caseId,
+              userId: session.user.id,
+            },
+          });
+
+          if (caseExists) {
+            const messageCount = await prisma.caseMessage.count({
+              where: { caseId: caseId },
+            });
+
+            await prisma.caseSummary.create({
+              data: {
+                caseId: caseId,
+                caseDescription: fallbackSummary.caseDescription,
+                timelineEvents: fallbackSummary.timelineEvents,
+                keyPoints: fallbackSummary.keyPoints,
+                nextSteps: fallbackSummary.nextSteps,
+                urgency: fallbackSummary.urgency,
+                messageCount: messageCount,
+              },
+            });
+
+            console.log(
+              `Fallback summary saved to database for case ${caseId}`
+            );
+          }
+        } catch (dbError) {
+          console.error(
+            "Failed to save fallback summary to database:",
+            dbError
+          );
+        }
+      }
 
       return NextResponse.json({ summary: fallbackSummary });
     }
