@@ -16,7 +16,7 @@ const updateCaseSchema = z.object({
     .max(200, "Title too long")
     .optional(),
   description: z.string().max(1000, "Description too long").optional(),
-  status: z.enum(["active", "closed", "archived"]).optional(),
+  status: z.string().optional(),
 });
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
@@ -35,6 +35,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     const validatedData = updateCaseSchema.parse(body);
 
+    // Check if the case exists and belongs to the user
     const existingCase = await prisma.case.findFirst({
       where: {
         id: caseId,
@@ -79,6 +80,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json(
         {
           success: false,
+          error: "Validation error",
         },
         { status: 400 }
       );

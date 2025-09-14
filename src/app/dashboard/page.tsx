@@ -18,7 +18,14 @@ export default async function DashboardPage() {
       where: { userId: session.user.id },
     }),
     prisma.case.findMany({
-      where: { userId: session.user.id },
+      where: {
+        userId: session.user.id,
+        status: {
+          not: {
+            equals: "archived",
+          },
+        },
+      },
       include: {
         summaries: {
           orderBy: { createdAt: "desc" },
@@ -36,8 +43,8 @@ export default async function DashboardPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
 
-      <main className="flex-1">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 flex flex-col">
+        <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
           <header className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
             <p className="text-gray-600 mt-2">
@@ -45,8 +52,8 @@ export default async function DashboardPage() {
             </p>
           </header>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 flex-1">
+            <div className="lg:col-span-2 flex flex-col">
               <UserCasesList cases={cases} />
             </div>
 
