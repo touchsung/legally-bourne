@@ -5,11 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
 
-interface SignInButtonProps {
-  variant?: "default" | "navbar";
-}
-
-export function SignInButton({ variant = "default" }: SignInButtonProps) {
+export function SignInButton() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignIn = async () => {

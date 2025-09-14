@@ -51,7 +51,6 @@ export function AISummary({ summaryData }: AISummaryProps) {
 
   return (
     <div className="p-4">
-      {/* Urgency Badge */}
       {summaryData.urgency !== "low" && (
         <div className="mb-4">
           <span
@@ -64,14 +63,12 @@ export function AISummary({ summaryData }: AISummaryProps) {
         </div>
       )}
 
-      {/* Case Description */}
       <div className="mb-4">
         <p className="text-sm text-gray-700 font-medium">
           You&apos;re describing {summaryData.caseDescription}.
         </p>
       </div>
 
-      {/* Timeline Events */}
       {summaryData.timelineEvents.length > 0 && (
         <div className="mb-4">
           <h4 className="text-sm font-medium text-gray-900 mb-2 flex items-center">
@@ -94,7 +91,6 @@ export function AISummary({ summaryData }: AISummaryProps) {
         </div>
       )}
 
-      {/* Key Points */}
       {summaryData.keyPoints.length > 0 && (
         <div className="mb-4">
           <h4 className="text-sm font-medium text-gray-900 mb-2 flex items-center">
@@ -115,7 +111,6 @@ export function AISummary({ summaryData }: AISummaryProps) {
         </div>
       )}
 
-      {/* Next Steps */}
       {summaryData.nextSteps.length > 0 && (
         <div>
           <h4 className="text-sm font-medium text-gray-900 mb-2 flex items-center">

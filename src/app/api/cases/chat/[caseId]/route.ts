@@ -22,7 +22,6 @@ interface RouteParams {
   }>;
 }
 
-// GET - Fetch case and messages
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await auth();
@@ -85,7 +84,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// POST - Send message to case
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const session = await auth();
@@ -101,7 +99,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const validatedData = sendMessageSchema.parse(body);
     const { caseId } = await params;
 
-    // Verify case belongs to user
     const existingCase = await prisma.case.findFirst({
       where: {
         id: caseId,
@@ -123,8 +120,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Save user message
-    const userMessage = await prisma.caseMessage.create({
+    await prisma.caseMessage.create({
       data: {
         caseId: caseId,
         role: "user",
@@ -132,7 +128,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       },
     });
 
-    // Get case details for AI context
     const country = (countries as Country[]).find(
       (c) => c.code === existingCase.country
     );
@@ -145,7 +140,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Prepare messages for OpenAI
     const systemMessage = {
       role: "system" as const,
       content: `You are a helpful AI legal assistant for Legally Bourne. You are helping a user with their legal case in ${
@@ -184,7 +178,6 @@ Ask specific questions about their ${caseType.title.toLowerCase()} situation to 
       },
     ];
 
-    // Get AI response
     const completion = await openai.chat.completions.create({
       model: "gpt-4-turbo-preview",
       messages: conversationMessages,
@@ -201,7 +194,6 @@ Ask specific questions about their ${caseType.title.toLowerCase()} situation to 
       );
     }
 
-    // Save AI response
     const assistantMessage = await prisma.caseMessage.create({
       data: {
         caseId: caseId,

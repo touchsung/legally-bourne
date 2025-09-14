@@ -52,6 +52,7 @@ export default function CaseChatPage() {
     }
 
     fetchCaseData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [caseId, status, router]);
 
   const fetchCaseData = async () => {
@@ -59,7 +60,7 @@ export default function CaseChatPage() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/chat/${caseId}`, {
+      const response = await fetch(`/api/cases/chat/${caseId}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -76,7 +77,6 @@ export default function CaseChatPage() {
         throw new Error("Failed to fetch case");
       }
 
-      // Convert date strings back to Date objects
       const caseWithDates = {
         ...result.case,
         createdAt: new Date(result.case.createdAt),

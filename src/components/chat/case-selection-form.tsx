@@ -22,7 +22,6 @@ interface CaseSelectionFormProps {
   selectedCaseType: string;
   onCountryChange: (country: string) => void;
   onCaseTypeChange: (caseType: string) => void;
-  onContinue?: () => void; // Keep for backward compatibility
 }
 
 export function CaseSelectionForm({

@@ -14,8 +14,6 @@ interface QuickReferencesProps {
 }
 
 const getQuickReferences = (caseTypeId: string): QuickReference[] => {
-  const caseType = caseTypes.find((c) => c.id === caseTypeId);
-
   switch (caseTypeId) {
     case "housing-tenancy":
       return [

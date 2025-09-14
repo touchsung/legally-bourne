@@ -31,7 +31,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get case details
     const country = (countries as Country[]).find(
       (c) => c.code === selectedCountry
     );
@@ -44,7 +43,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create system message with case details
     const systemMessage = {
       role: "system" as const,
       content: `You are a helpful AI legal assistant for Legally Bourne. You are helping a user with their legal case in ${
@@ -71,7 +69,6 @@ Guidelines:
 Ask specific questions about their ${caseType.title.toLowerCase()} situation to provide more targeted assistance.`,
     };
 
-    // Prepare messages for OpenAI
     const openAIMessages = [systemMessage, ...messages];
 
     const completion = await openai.chat.completions.create({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { ChatMessage } from "@/types/chat";
 import { ChatMessageItem } from "@/components/chat/chat-message-item";
@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { ChevronUp, ChevronDown, FileText, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import type { SendMessageInput } from "@/app/api/cases/schema";
+import type { CaseSummary, SendMessageInput } from "@/app/api/cases/schema";
 
 interface Country {
   code: string;
@@ -49,54 +49,48 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
   const [showQuickReferences, setShowQuickReferences] = useState(true);
   const [isSummaryCollapsed, setIsSummaryCollapsed] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [summaryData, setSummaryData] = useState(null);
+  const [summaryData, setSummaryData] = useState<CaseSummary | null>(null);
 
-  const getSelectedCaseType = () => {
-    return caseTypes.find((type) => type.id === caseData.caseType);
-  };
-
-  const getSelectedCountry = () => {
-    return (countries as Country[]).find(
-      (country) => country.code === caseData.country
-    );
-  };
-
-  const selectedCase = getSelectedCaseType();
-  const selectedCountryData = getSelectedCountry();
+  const selectedCase = caseTypes.find((type) => type.id === caseData.caseType);
+  const selectedCountryData = (countries as Country[]).find(
+    (country) => country.code === caseData.country
+  );
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const generateSummary = async (messagesToSummarize: ChatMessage[]) => {
-    try {
-      const response = await fetch("/api/chat/summary", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: messagesToSummarize.map((msg) => ({
-            role: msg.role,
-            content: msg.content,
-          })),
-          selectedCaseType: caseData.caseType,
-          selectedCountry: caseData.country,
-          caseId: caseData.id,
-        }),
-      });
+  const generateSummary = useCallback(
+    async (messagesToSummarize: ChatMessage[]) => {
+      try {
+        const response = await fetch("/api/cases/chat/summary", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messages: messagesToSummarize.map((msg) => ({
+              role: msg.role,
+              content: msg.content,
+            })),
+            selectedCaseType: caseData.caseType,
+            selectedCountry: caseData.country,
+            caseId: caseData.id,
+          }),
+        });
 
-      if (response.ok) {
-        const data = await response.json();
-        setSummaryData(data.summary);
+        if (response.ok) {
+          const data = await response.json();
+          setSummaryData(data.summary);
+        }
+      } catch (error) {
+        console.error("Failed to generate summary:", error);
       }
-    } catch (error) {
-      console.error("Failed to generate summary:", error);
-    }
-  };
+    },
+    [caseData.id, caseData.caseType, caseData.country]
+  );
 
   useEffect(() => {
-    // Convert case messages to ChatMessage format
     const convertedMessages: ChatMessage[] = caseData.messages.map((msg) => ({
       id: msg.id,
       role: msg.role,
@@ -106,17 +100,17 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
 
     setMessages(convertedMessages);
 
-    // Hide quick references if there are user messages
     const hasUserMessages = convertedMessages.some(
       (msg) => msg.role === "user"
     );
     setShowQuickReferences(!hasUserMessages);
-
-    // Generate summary if there are multiple messages
-    if (convertedMessages.length > 2) {
-      generateSummary(convertedMessages);
-    }
   }, [caseData]);
+
+  useEffect(() => {
+    if (messages.length > 2) {
+      void generateSummary(messages);
+    }
+  }, [messages, generateSummary]);
 
   useEffect(() => {
     scrollToBottom();
@@ -128,7 +122,6 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
       return;
     }
 
-    // Hide quick references once user starts chatting
     setShowQuickReferences(false);
 
     const userMessage: ChatMessage = {
@@ -142,25 +135,17 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
     setIsLoading(true);
 
     try {
-      const messageData: SendMessageInput = {
-        message: content,
-      };
+      const messageData: SendMessageInput = { message: content };
 
-      const response = await fetch(`/api/chat/${caseData.id}`, {
+      const response = await fetch(`/api/cases/chat/${caseData.id}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(messageData),
       });
 
       const result = await response.json();
 
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to send message");
-      }
-
-      if (!result.success) {
+      if (!response.ok || !result.success) {
         throw new Error(result.error || "Failed to send message");
       }
 
@@ -171,29 +156,19 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
         timestamp: new Date(result.message.createdAt),
       };
 
-      // Replace temp user message with real one and add assistant message
       setMessages((prev) => {
         const withoutTemp = prev.filter((msg) => !msg.id.startsWith("temp-"));
         const realUserMessage = {
           ...userMessage,
-          id: `user-${Date.now()}`, // Give it a real ID
+          id: `user-${Date.now()}`,
         };
         return [...withoutTemp, realUserMessage, assistantMessage];
       });
-
-      // Generate summary after a few messages
-      const totalMessages = messages.length + 2;
-      if (totalMessages > 2) {
-        const allMessages = [...messages, userMessage, assistantMessage];
-        generateSummary(allMessages);
-      }
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to send message"
       );
-
-      // Remove the failed message
       setMessages((prev) => prev.filter((msg) => !msg.id.startsWith("temp-")));
     } finally {
       setIsLoading(false);
@@ -206,7 +181,6 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
 
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden h-full flex flex-col">
-      {/* Chat Header */}
       <div className="bg-blue-50 p-3 md:p-4 border-b flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -231,38 +205,32 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
             </div>
           </div>
 
-          {/* Summary Toggle - Always visible in header */}
-          {
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsSummaryCollapsed(!isSummaryCollapsed)}
-              className="p-2 h-auto hover:bg-blue-100 flex items-center space-x-1"
-            >
-              <FileText className="w-4 h-4 text-blue-600" />
-              <span className="text-xs text-blue-600 hidden sm:inline">
-                Summary
-              </span>
-              {isSummaryCollapsed ? (
-                <ChevronDown className="w-4 h-4 text-blue-600" />
-              ) : (
-                <ChevronUp className="w-4 h-4 text-blue-600" />
-              )}
-            </Button>
-          }
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsSummaryCollapsed(!isSummaryCollapsed)}
+            className="p-2 h-auto hover:bg-blue-100 flex items-center space-x-1"
+          >
+            <FileText className="w-4 h-4 text-blue-600" />
+            <span className="text-xs text-blue-600 hidden sm:inline">
+              Summary
+            </span>
+            {isSummaryCollapsed ? (
+              <ChevronDown className="w-4 h-4 text-blue-600" />
+            ) : (
+              <ChevronUp className="w-4 h-4 text-blue-600" />
+            )}
+          </Button>
         </div>
       </div>
 
-      {/* AI Summary Section - Shows first, collapsible */}
       {!isSummaryCollapsed && (
         <div className="flex-shrink-0 border-b border-gray-100 bg-blue-50/50 max-h-60 overflow-y-auto">
           <AISummary summaryData={summaryData} />
         </div>
       )}
 
-      {/* Messages - Scrollable */}
       <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 min-h-0">
-        {/* Quick References - show only when there are no user messages */}
         {messages.length <= 1 && showQuickReferences && (
           <QuickReferences
             selectedCaseType={caseData.caseType}
@@ -303,7 +271,6 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Chat Input - Fixed at bottom */}
       <div className="flex-shrink-0">
         <ChatInput
           onSendMessage={handleSendMessage}
