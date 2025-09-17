@@ -1,6 +1,6 @@
 "use client";
 
-import { caseTypes } from "@/data/case-types";
+import { caseGroups } from "@/data/case-types";
 
 interface CaseTypeSelectorProps {
   selectedCaseType: string;
@@ -12,58 +12,63 @@ export function CaseTypeSelector({
   onCaseTypeChange,
 }: CaseTypeSelectorProps) {
   return (
-    <div className="mb-4">
-      <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-4 md:mb-6">
+    <div className="mb-8">
+      <h2 className="text-xl font-semibold text-gray-900 mb-6">
         Step 2 Select Case Type
       </h2>
-      <div className="grid grid-cols-1 gap-3 md:gap-4">
-        {caseTypes.map((caseType) => {
-          const Icon = caseType.icon;
-          const isSelected = selectedCaseType === caseType.id;
 
-          return (
-            <button
-              key={caseType.id}
-              onClick={() => onCaseTypeChange(caseType.id)}
-              className={`w-full p-3 md:p-4 rounded-lg border-2 text-left transition-all duration-200 ${
-                isSelected
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-200 hover:border-gray-300 bg-white"
-              }`}
-            >
-              <div className="flex items-start space-x-3 md:space-x-4">
-                <div
-                  className={`p-2 rounded-lg flex-shrink-0 ${
-                    isSelected ? "bg-blue-500" : "bg-blue-100"
-                  }`}
-                >
-                  <Icon
-                    className={`w-5 h-5 md:w-6 md:h-6 ${
-                      isSelected ? "text-white" : "text-blue-600"
-                    }`}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3
-                    className={`font-semibold text-base md:text-lg mb-1 ${
-                      isSelected ? "text-blue-900" : "text-gray-900"
-                    }`}
+      {caseGroups.map((group) => {
+        const GroupIcon = group.icon;
+
+        return (
+          <div key={group.id} className="mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <GroupIcon className="w-5 h-5 text-gray-600" />
+              <h3 className="font-semibold text-gray-900">{group.title}</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {group.types.map((caseType) => {
+                const Icon = caseType.icon;
+                const isSelected = selectedCaseType === caseType.id;
+
+                return (
+                  <div
+                    key={caseType.id}
+                    className="relative border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors cursor-pointer"
+                    onClick={() => onCaseTypeChange(caseType.id)}
                   >
-                    {caseType.title}
-                  </h3>
-                  <p
-                    className={`text-xs md:text-sm leading-tight ${
-                      isSelected ? "text-blue-700" : "text-gray-600"
-                    }`}
-                  >
-                    {caseType.description}
-                  </p>
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className="p-2 bg-blue-50 rounded-lg flex-shrink-0">
+                          <Icon className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-gray-900 mb-1">
+                            {caseType.title}
+                          </h4>
+                          <p className="text-sm text-gray-600 leading-relaxed">
+                            {caseType.description}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0 ml-3">
+                        <input
+                          type="radio"
+                          name="caseType"
+                          value={caseType.id}
+                          checked={isSelected}
+                          onChange={() => onCaseTypeChange(caseType.id)}
+                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
