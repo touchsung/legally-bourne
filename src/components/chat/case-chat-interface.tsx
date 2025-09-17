@@ -7,17 +7,19 @@ import { ChatMessageItem } from "@/components/chat/chat-message-item";
 import { ChatInput } from "@/components/chat/chat-input";
 import { QuickReferences } from "@/components/chat/quick-references";
 import { AISummary } from "@/components/chat/ai-summary";
-import countries from "@/data/countries.json";
-import { caseTypes } from "@/data/case-types";
 import { toast } from "sonner";
-import { ChevronUp, ChevronDown, FileText, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { FileText, MessageCircle } from "lucide-react";
 import type { CaseSummary, SendMessageInput } from "@/app/api/cases/schema";
 
 interface Country {
   code: string;
   name: string;
+}
+
+interface CaseType {
+  id: string;
+  title: string;
+  description: string;
 }
 
 interface UploadedFile {
@@ -49,28 +51,27 @@ interface CaseData {
 
 interface CaseChatInterfaceProps {
   caseData: CaseData;
+  selectedCase?: CaseType | null;
+  selectedCountryData?: Country | null;
 }
 
 interface SendMessageWithFilesInput extends SendMessageInput {
   fileIds?: string[];
 }
 
-export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
-  const router = useRouter();
+export function CaseChatInterface({
+  caseData,
+  selectedCase,
+  selectedCountryData,
+}: CaseChatInterfaceProps) {
   const { data: session } = useSession();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showQuickReferences, setShowQuickReferences] = useState(true);
-  const [isSummaryCollapsed, setIsSummaryCollapsed] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [summaryData, setSummaryData] = useState<CaseSummary | null>(null);
   const isGenerating = useRef(false);
-
-  const selectedCase = caseTypes.find((type) => type.id === caseData.caseType);
-  const selectedCountryData = (countries as Country[]).find(
-    (country) => country.code === caseData.country
-  );
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -257,10 +258,6 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
     }
   };
 
-  const handleBackToSelection = () => {
-    router.push("/chat");
-  };
-
   const handleFileUploaded = (file: UploadedFile) => {
     setUploadedFiles((prev) => [file, ...prev]);
   };
@@ -272,110 +269,101 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
   }));
 
   return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden h-full flex flex-col">
-      <div className="bg-blue-50 p-3 md:p-4 border-b flex-shrink-0">
-        <div className="flex items-center justify-between">
+    <div className="flex h-full gap-6">
+      {/* Left Side - Chat */}
+      <div className="flex-1 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
+        <div className="bg-blue-50 p-4 border-b flex-shrink-0">
           <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackToSelection}
-              className="p-2 hover:bg-blue-100"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
               <span className="text-white text-sm font-semibold">AI</span>
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900 text-sm md:text-base">
-                {caseData.title}
+              <h3 className="font-semibold text-gray-900 text-lg">
+                Quick Chat with Legal Assistant
               </h3>
-              <p className="text-xs text-gray-600">
+              <p className="text-sm text-gray-600">
                 {selectedCase?.title} • {selectedCountryData?.name}
               </p>
             </div>
           </div>
-          {summaryData && (
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsSummaryCollapsed(!isSummaryCollapsed)}
-                className="p-2 h-auto hover:bg-blue-100 flex items-center space-x-1"
-              >
-                <FileText className="w-4 h-4 text-blue-600" />
-                <span className="text-xs text-blue-600 hidden sm:inline">
-                  Summary
-                </span>
-                {isSummaryCollapsed ? (
-                  <ChevronDown className="w-4 h-4 text-blue-600" />
-                ) : (
-                  <ChevronUp className="w-4 h-4 text-blue-600" />
-                )}
-              </Button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+          {messages.length <= 1 && showQuickReferences && (
+            <QuickReferences
+              selectedCaseType={caseData.caseType}
+              onQuestionSelect={(question) => handleSendMessage(question)}
+              isVisible={showQuickReferences}
+            />
+          )}
+
+          {messages.map((message) => (
+            <ChatMessageItem
+              key={message.id}
+              message={message}
+              userImage={session?.user?.image}
+              userName={session?.user?.name}
+            />
+          ))}
+
+          {isLoading && (
+            <div className="flex gap-3 justify-start">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-semibold">AI</span>
+              </div>
+              <div className="bg-gray-100 rounded-lg px-4 py-2">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div
+                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "0.1s" }}
+                  ></div>
+                  <div
+                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "0.2s" }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <div className="flex-shrink-0">
+          <ChatInput
+            caseId={caseData.id}
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+            disabled={!session?.user}
+            availableFiles={availableFiles}
+            onFileUploaded={handleFileUploaded}
+          />
+        </div>
+      </div>
+
+      <div className="w-80 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
+        <div className="p-4 border-b bg-gray-50 flex-shrink-0">
+          <div className="flex items-center space-x-2">
+            <FileText className="w-5 h-5 text-blue-600" />
+            <h3 className="font-semibold text-gray-900">Case Summary</h3>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {summaryData ? (
+            <AISummary summaryData={summaryData} />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+                <MessageCircle className="w-8 h-8 text-blue-400" />
+              </div>
+              <h4 className="font-medium text-gray-900 mb-2">Case Summary</h4>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                Keep chatting to build your case summary
+              </p>
             </div>
           )}
         </div>
-      </div>
-
-      {!isSummaryCollapsed && summaryData && (
-        <div className="flex-shrink-0 border-b border-gray-100 bg-blue-50/50 max-h-60 overflow-y-auto">
-          <AISummary summaryData={summaryData} />
-        </div>
-      )}
-
-      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 min-h-0">
-        {messages.length <= 1 && showQuickReferences && (
-          <QuickReferences
-            selectedCaseType={caseData.caseType}
-            onQuestionSelect={(question) => handleSendMessage(question)}
-            isVisible={showQuickReferences}
-          />
-        )}
-
-        {messages.map((message) => (
-          <ChatMessageItem
-            key={message.id}
-            message={message}
-            userImage={session?.user?.image}
-            userName={session?.user?.name}
-          />
-        ))}
-
-        {isLoading && (
-          <div className="flex gap-3 justify-start">
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs font-semibold">AI</span>
-            </div>
-            <div className="bg-gray-100 rounded-lg px-4 py-2">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                <div
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.1s" }}
-                ></div>
-                <div
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.2s" }}
-                ></div>
-              </div>
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Enhanced Chat Input with Integrated File Upload */}
-      <div className="flex-shrink-0">
-        <ChatInput
-          caseId={caseData.id}
-          onSendMessage={handleSendMessage}
-          isLoading={isLoading}
-          disabled={!session?.user}
-          availableFiles={availableFiles}
-          onFileUploaded={handleFileUploaded}
-        />
       </div>
     </div>
   );
