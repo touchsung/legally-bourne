@@ -6,18 +6,23 @@ import { ChatMessage } from "@/types/chat";
 import { ChatMessageItem } from "@/components/chat/chat-message-item";
 import { ChatInput } from "@/components/chat/chat-input";
 import { QuickReferences } from "@/components/chat/quick-references";
-import { AISummary } from "@/components/chat/ai-summary";
-import countries from "@/data/countries.json";
-import { caseTypes } from "@/data/case-types";
+import { CaseSummary } from "@/components/chat/case-summary";
 import { toast } from "sonner";
-import { ChevronUp, ChevronDown, FileText, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
-import type { CaseSummary, SendMessageInput } from "@/app/api/cases/schema";
+import { FileText, MessageCircle } from "lucide-react";
+import type {
+  CaseSummary as CaseSummaryType,
+  SendMessageInput,
+} from "@/app/api/cases/schema";
 
 interface Country {
   code: string;
   name: string;
+}
+
+interface CaseType {
+  id: string;
+  title: string;
+  description: string;
 }
 
 interface UploadedFile {
@@ -28,7 +33,6 @@ interface UploadedFile {
   uploadedAt: Date;
 }
 
-// Enhanced CaseData interface to include summary from database
 interface CaseData {
   id: string;
   title: string;
@@ -44,60 +48,46 @@ interface CaseData {
     content: string;
     createdAt: Date;
   }>;
-  summary?: CaseSummary | null;
+  summary?: CaseSummaryType;
 }
 
 interface CaseChatInterfaceProps {
   caseData: CaseData;
+  selectedCase?: CaseType | null;
+  selectedCountryData?: Country | null;
 }
 
 interface SendMessageWithFilesInput extends SendMessageInput {
   fileIds?: string[];
 }
 
-export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
-  const router = useRouter();
+export function CaseChatInterface({
+  caseData,
+  selectedCase,
+  selectedCountryData,
+}: CaseChatInterfaceProps) {
   const { data: session } = useSession();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showQuickReferences, setShowQuickReferences] = useState(true);
-  const [isSummaryCollapsed, setIsSummaryCollapsed] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [summaryData, setSummaryData] = useState<CaseSummaryType | null>(null);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [summaryData, setSummaryData] = useState<CaseSummary | null>(null);
   const isGenerating = useRef(false);
-
-  const selectedCase = caseTypes.find((type) => type.id === caseData.caseType);
-  const selectedCountryData = (countries as Country[]).find(
-    (country) => country.code === caseData.country
-  );
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  interface FileFromAPI {
-    id: string;
-    filename: string;
-    filesize: number;
-    mimetype: string;
-    uploadedAt: string;
-  }
-
-  interface FilesAPIResponse {
-    success: boolean;
-    files: FileFromAPI[];
-  }
-
   const fetchFiles = useCallback(async () => {
     try {
       const response = await fetch(`/api/cases/files/${caseData.id}`);
-
       if (response.ok) {
-        const result: FilesAPIResponse = await response.json();
+        const result = await response.json();
         if (result.success) {
           setUploadedFiles(
-            result.files.map((file: FileFromAPI) => ({
+            result.files.map((file: any) => ({
               ...file,
               uploadedAt: new Date(file.uploadedAt),
             }))
@@ -110,7 +100,12 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
   }, [caseData.id]);
 
   const generateSummary = async (messagesToSummarize: ChatMessage[]) => {
+    if (isGenerating.current) return;
+
     try {
+      setIsGeneratingSummary(true);
+      isGenerating.current = true;
+
       const response = await fetch("/api/cases/chat/summary", {
         method: "POST",
         headers: {
@@ -124,6 +119,11 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
           selectedCaseType: caseData.caseType,
           selectedCountry: caseData.country,
           caseId: caseData.id,
+          uploadedFiles: uploadedFiles.map((f) => ({
+            id: f.id,
+            filename: f.filename,
+            mimetype: f.mimetype,
+          })),
         }),
       });
 
@@ -133,6 +133,9 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
       }
     } catch (error) {
       console.error("Failed to generate summary:", error);
+    } finally {
+      setIsGeneratingSummary(false);
+      isGenerating.current = false;
     }
   };
 
@@ -151,6 +154,7 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
     );
     setShowQuickReferences(!hasUserMessages);
 
+    // Load existing summary if available
     if (caseData.summary) {
       setSummaryData(caseData.summary);
     }
@@ -225,6 +229,7 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
         content: result.message.content,
         timestamp: new Date(result.message.createdAt),
       };
+
       setMessages((prev) => {
         const withoutTemp = prev.filter((msg) => !msg.id.startsWith("temp-"));
         const realUserMessage = {
@@ -234,12 +239,10 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
 
         const newMessages = [...withoutTemp, realUserMessage, assistantMessage];
 
-        if (!isGenerating.current) {
-          isGenerating.current = true;
-          generateSummary(newMessages).finally(() => {
-            isGenerating.current = false;
-          });
-        }
+        setTimeout(() => {
+          generateSummary(newMessages);
+        }, 1000);
+
         return newMessages;
       });
 
@@ -257,12 +260,20 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
     }
   };
 
-  const handleBackToSelection = () => {
-    router.push("/chat");
-  };
-
   const handleFileUploaded = (file: UploadedFile) => {
     setUploadedFiles((prev) => [file, ...prev]);
+    setTimeout(() => {
+      generateSummary(messages);
+    }, 500);
+  };
+
+  const handleFileUploadTrigger = () => {
+    const chatInput = document.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement;
+    if (chatInput) {
+      chatInput.click();
+    }
   };
 
   const availableFiles = uploadedFiles.map((file) => ({
@@ -272,110 +283,99 @@ export function CaseChatInterface({ caseData }: CaseChatInterfaceProps) {
   }));
 
   return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden h-full flex flex-col">
-      <div className="bg-blue-50 p-3 md:p-4 border-b flex-shrink-0">
-        <div className="flex items-center justify-between">
+    <div className="flex h-full gap-6">
+      {/* Left Side - Chat */}
+      <div className="flex-1 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
+        <div className="bg-blue-50 p-4 border-b flex-shrink-0">
           <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBackToSelection}
-              className="p-2 hover:bg-blue-100"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
               <span className="text-white text-sm font-semibold">AI</span>
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900 text-sm md:text-base">
-                {caseData.title}
+              <h3 className="font-semibold text-gray-900 text-lg">
+                Legal Assistant Chat
               </h3>
-              <p className="text-xs text-gray-600">
+              <p className="text-sm text-gray-600">
                 {selectedCase?.title} • {selectedCountryData?.name}
               </p>
             </div>
           </div>
-          {summaryData && (
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsSummaryCollapsed(!isSummaryCollapsed)}
-                className="p-2 h-auto hover:bg-blue-100 flex items-center space-x-1"
-              >
-                <FileText className="w-4 h-4 text-blue-600" />
-                <span className="text-xs text-blue-600 hidden sm:inline">
-                  Summary
-                </span>
-                {isSummaryCollapsed ? (
-                  <ChevronDown className="w-4 h-4 text-blue-600" />
-                ) : (
-                  <ChevronUp className="w-4 h-4 text-blue-600" />
-                )}
-              </Button>
-            </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+          {messages.length <= 1 && showQuickReferences && (
+            <QuickReferences
+              selectedCaseType={caseData.caseType}
+              onQuestionSelect={(question) => handleSendMessage(question)}
+              isVisible={showQuickReferences}
+            />
           )}
-        </div>
-      </div>
 
-      {!isSummaryCollapsed && summaryData && (
-        <div className="flex-shrink-0 border-b border-gray-100 bg-blue-50/50 max-h-60 overflow-y-auto">
-          <AISummary summaryData={summaryData} />
-        </div>
-      )}
+          {messages.map((message) => (
+            <ChatMessageItem
+              key={message.id}
+              message={message}
+              userImage={session?.user?.image}
+              userName={session?.user?.name}
+            />
+          ))}
 
-      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-4 min-h-0">
-        {messages.length <= 1 && showQuickReferences && (
-          <QuickReferences
-            selectedCaseType={caseData.caseType}
-            onQuestionSelect={(question) => handleSendMessage(question)}
-            isVisible={showQuickReferences}
-          />
-        )}
-
-        {messages.map((message) => (
-          <ChatMessageItem
-            key={message.id}
-            message={message}
-            userImage={session?.user?.image}
-            userName={session?.user?.name}
-          />
-        ))}
-
-        {isLoading && (
-          <div className="flex gap-3 justify-start">
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs font-semibold">AI</span>
-            </div>
-            <div className="bg-gray-100 rounded-lg px-4 py-2">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                <div
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.1s" }}
-                ></div>
-                <div
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.2s" }}
-                ></div>
+          {isLoading && (
+            <div className="flex gap-3 justify-start">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-semibold">AI</span>
+              </div>
+              <div className="bg-gray-100 rounded-lg px-4 py-2">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div
+                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "0.1s" }}
+                  ></div>
+                  <div
+                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "0.2s" }}
+                  ></div>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <div className="flex-shrink-0">
+          <ChatInput
+            caseId={caseData.id}
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+            disabled={!session?.user}
+            availableFiles={availableFiles}
+            onFileUploaded={handleFileUploaded}
+          />
+        </div>
       </div>
 
-      {/* Enhanced Chat Input with Integrated File Upload */}
-      <div className="flex-shrink-0">
-        <ChatInput
-          caseId={caseData.id}
-          onSendMessage={handleSendMessage}
-          isLoading={isLoading}
-          disabled={!session?.user}
-          availableFiles={availableFiles}
-          onFileUploaded={handleFileUploaded}
-        />
+      <div className="w-80 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
+        <div className="p-4 border-b bg-gray-50 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <FileText className="w-5 h-5 text-blue-600" />
+              <h3 className="font-semibold text-gray-900">
+                Legal Case Summary
+              </h3>
+            </div>
+            {isGeneratingSummary && (
+              <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          <CaseSummary
+            summaryData={summaryData}
+            onFileUpload={handleFileUploadTrigger}
+          />
+        </div>
       </div>
     </div>
   );
