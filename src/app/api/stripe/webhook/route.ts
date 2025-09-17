@@ -48,10 +48,7 @@ export async function POST(request: NextRequest) {
         const invoice = event.data.object as Stripe.Invoice;
         return handleInvoicePaymentFailed(invoice);
       })
-      .with("customer.subscription.trial_will_end", async () => {
-        const subscription = event.data.object as Stripe.Subscription;
-        return handleTrialWillEnd(subscription);
-      })
+      .with("customer.subscription.trial_will_end", async () => {})
       .otherwise(() => {
         return Promise.resolve();
       });
@@ -327,5 +324,3 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
     })
     .otherwise(() => Promise.resolve());
 }
-
-async function handleTrialWillEnd(subscription: Stripe.Subscription) {}

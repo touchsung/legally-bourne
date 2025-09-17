@@ -8,7 +8,7 @@ import { ChatInput } from "@/components/chat/chat-input";
 import { QuickReferences } from "@/components/chat/quick-references";
 import { CaseSummary } from "@/components/chat/case-summary";
 import { toast } from "sonner";
-import { FileText, MessageCircle } from "lucide-react";
+import { FileText } from "lucide-react";
 import type {
   CaseSummary as CaseSummaryType,
   SendMessageInput,
@@ -87,10 +87,12 @@ export function CaseChatInterface({
         const result = await response.json();
         if (result.success) {
           setUploadedFiles(
-            result.files.map((file: any) => ({
-              ...file,
-              uploadedAt: new Date(file.uploadedAt),
-            }))
+            result.files.map(
+              (file: { uploadedAt: string | number | Date }) => ({
+                ...file,
+                uploadedAt: new Date(file.uploadedAt),
+              })
+            )
           );
         }
       }

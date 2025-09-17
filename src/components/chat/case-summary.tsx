@@ -29,14 +29,9 @@ import type {
 interface CaseSummaryProps {
   summaryData: CaseSummary | null;
   onFileUpload?: () => void;
-  onEdit?: () => void;
 }
 
-export function CaseSummary({
-  summaryData,
-  onFileUpload,
-  onEdit,
-}: CaseSummaryProps) {
+export function CaseSummary({ summaryData, onFileUpload }: CaseSummaryProps) {
   if (!summaryData) {
     return <CaseSummaryPlaceholder />;
   }
@@ -184,7 +179,7 @@ export function CaseSummary({
             {summaryData.timelineEvents &&
             summaryData.timelineEvents.length > 0 ? (
               summaryData.timelineEvents.map((event, index) => (
-                <TimelineItem key={index} event={event} isFirst={index === 0} />
+                <TimelineItem key={index} event={event} />
               ))
             ) : (
               <div className="text-center py-4 xs:py-6 sm:py-8 text-gray-500">
@@ -320,7 +315,6 @@ function EvidenceItem({
 
 function TimelineItem({
   event,
-  isFirst = false,
 }: {
   event:
     | TimelineEvent
@@ -331,7 +325,6 @@ function TimelineItem({
         type: string;
         priority: string;
       };
-  isFirst?: boolean;
 }) {
   const getStatusColor = (status: string) => {
     switch (status) {
