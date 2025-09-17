@@ -94,18 +94,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
           id: latestSummary.id,
           caseId: latestSummary.caseId,
           caseDescription: latestSummary.caseDescription,
+          legalAnalysis: latestSummary.legalAnalysis,
+          evidenceChecklist: Array.isArray(latestSummary.evidenceChecklist)
+            ? latestSummary.evidenceChecklist
+            : [],
+          nextCriticalDeadline: latestSummary.nextCriticalDeadline,
           timelineEvents: Array.isArray(latestSummary.timelineEvents)
             ? latestSummary.timelineEvents
-            : [],
-          keyPoints: Array.isArray(latestSummary.keyPoints)
-            ? latestSummary.keyPoints
-            : [],
-          nextSteps: Array.isArray(latestSummary.nextSteps)
-            ? latestSummary.nextSteps
             : [],
           urgency: latestSummary.urgency as "low" | "medium" | "high",
           messageCount: latestSummary.messageCount,
           createdAt: latestSummary.createdAt,
+          updatedAt: latestSummary.updatedAt,
         }
       : null;
 

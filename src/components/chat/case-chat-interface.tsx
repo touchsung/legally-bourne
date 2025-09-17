@@ -6,10 +6,13 @@ import { ChatMessage } from "@/types/chat";
 import { ChatMessageItem } from "@/components/chat/chat-message-item";
 import { ChatInput } from "@/components/chat/chat-input";
 import { QuickReferences } from "@/components/chat/quick-references";
-import { AISummary } from "@/components/chat/ai-summary";
+import { CaseSummary } from "@/components/chat/case-summary";
 import { toast } from "sonner";
 import { FileText, MessageCircle } from "lucide-react";
-import type { CaseSummary, SendMessageInput } from "@/app/api/cases/schema";
+import type {
+  CaseSummary as CaseSummaryType,
+  SendMessageInput,
+} from "@/app/api/cases/schema";
 
 interface Country {
   code: string;
@@ -30,7 +33,6 @@ interface UploadedFile {
   uploadedAt: Date;
 }
 
-// Enhanced CaseData interface to include summary from database
 interface CaseData {
   id: string;
   title: string;
@@ -46,7 +48,7 @@ interface CaseData {
     content: string;
     createdAt: Date;
   }>;
-  summary?: CaseSummary | null;
+  summary?: CaseSummaryType;
 }
 
 interface CaseChatInterfaceProps {
@@ -69,36 +71,23 @@ export function CaseChatInterface({
   const [isLoading, setIsLoading] = useState(false);
   const [showQuickReferences, setShowQuickReferences] = useState(true);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [summaryData, setSummaryData] = useState<CaseSummaryType | null>(null);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [summaryData, setSummaryData] = useState<CaseSummary | null>(null);
   const isGenerating = useRef(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  interface FileFromAPI {
-    id: string;
-    filename: string;
-    filesize: number;
-    mimetype: string;
-    uploadedAt: string;
-  }
-
-  interface FilesAPIResponse {
-    success: boolean;
-    files: FileFromAPI[];
-  }
-
   const fetchFiles = useCallback(async () => {
     try {
       const response = await fetch(`/api/cases/files/${caseData.id}`);
-
       if (response.ok) {
-        const result: FilesAPIResponse = await response.json();
+        const result = await response.json();
         if (result.success) {
           setUploadedFiles(
-            result.files.map((file: FileFromAPI) => ({
+            result.files.map((file: any) => ({
               ...file,
               uploadedAt: new Date(file.uploadedAt),
             }))
@@ -111,7 +100,12 @@ export function CaseChatInterface({
   }, [caseData.id]);
 
   const generateSummary = async (messagesToSummarize: ChatMessage[]) => {
+    if (isGenerating.current) return;
+
     try {
+      setIsGeneratingSummary(true);
+      isGenerating.current = true;
+
       const response = await fetch("/api/cases/chat/summary", {
         method: "POST",
         headers: {
@@ -125,6 +119,11 @@ export function CaseChatInterface({
           selectedCaseType: caseData.caseType,
           selectedCountry: caseData.country,
           caseId: caseData.id,
+          uploadedFiles: uploadedFiles.map((f) => ({
+            id: f.id,
+            filename: f.filename,
+            mimetype: f.mimetype,
+          })),
         }),
       });
 
@@ -134,6 +133,9 @@ export function CaseChatInterface({
       }
     } catch (error) {
       console.error("Failed to generate summary:", error);
+    } finally {
+      setIsGeneratingSummary(false);
+      isGenerating.current = false;
     }
   };
 
@@ -152,6 +154,7 @@ export function CaseChatInterface({
     );
     setShowQuickReferences(!hasUserMessages);
 
+    // Load existing summary if available
     if (caseData.summary) {
       setSummaryData(caseData.summary);
     }
@@ -226,6 +229,7 @@ export function CaseChatInterface({
         content: result.message.content,
         timestamp: new Date(result.message.createdAt),
       };
+
       setMessages((prev) => {
         const withoutTemp = prev.filter((msg) => !msg.id.startsWith("temp-"));
         const realUserMessage = {
@@ -235,12 +239,10 @@ export function CaseChatInterface({
 
         const newMessages = [...withoutTemp, realUserMessage, assistantMessage];
 
-        if (!isGenerating.current) {
-          isGenerating.current = true;
-          generateSummary(newMessages).finally(() => {
-            isGenerating.current = false;
-          });
-        }
+        setTimeout(() => {
+          generateSummary(newMessages);
+        }, 1000);
+
         return newMessages;
       });
 
@@ -260,6 +262,18 @@ export function CaseChatInterface({
 
   const handleFileUploaded = (file: UploadedFile) => {
     setUploadedFiles((prev) => [file, ...prev]);
+    setTimeout(() => {
+      generateSummary(messages);
+    }, 500);
+  };
+
+  const handleFileUploadTrigger = () => {
+    const chatInput = document.querySelector(
+      'input[type="file"]'
+    ) as HTMLInputElement;
+    if (chatInput) {
+      chatInput.click();
+    }
   };
 
   const availableFiles = uploadedFiles.map((file) => ({
@@ -279,7 +293,7 @@ export function CaseChatInterface({
             </div>
             <div>
               <h3 className="font-semibold text-gray-900 text-lg">
-                Quick Chat with Legal Assistant
+                Legal Assistant Chat
               </h3>
               <p className="text-sm text-gray-600">
                 {selectedCase?.title} • {selectedCountryData?.name}
@@ -343,26 +357,24 @@ export function CaseChatInterface({
 
       <div className="w-80 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
         <div className="p-4 border-b bg-gray-50 flex-shrink-0">
-          <div className="flex items-center space-x-2">
-            <FileText className="w-5 h-5 text-blue-600" />
-            <h3 className="font-semibold text-gray-900">Case Summary</h3>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <FileText className="w-5 h-5 text-blue-600" />
+              <h3 className="font-semibold text-gray-900">
+                Legal Case Summary
+              </h3>
+            </div>
+            {isGeneratingSummary && (
+              <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            )}
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {summaryData ? (
-            <AISummary summaryData={summaryData} />
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-              <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-                <MessageCircle className="w-8 h-8 text-blue-400" />
-              </div>
-              <h4 className="font-medium text-gray-900 mb-2">Case Summary</h4>
-              <p className="text-sm text-gray-500 leading-relaxed">
-                Keep chatting to build your case summary
-              </p>
-            </div>
-          )}
+          <CaseSummary
+            summaryData={summaryData}
+            onFileUpload={handleFileUploadTrigger}
+          />
         </div>
       </div>
     </div>
