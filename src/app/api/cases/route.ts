@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { createCaseSchema } from "@/app/api/cases/schema";
 import countries from "@/data/countries.json";
 import { caseTypes } from "@/data/case-types";
-import { z } from "zod";
 
 interface Country {
   code: string;

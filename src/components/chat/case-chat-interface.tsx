@@ -351,8 +351,8 @@ export function CaseChatInterface({
                   Ready to Help with Your {selectedCase?.title}
                 </h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  Describe your situation below and I'll provide legal guidance
-                  specific to {selectedCountryData?.name}
+                  Describe your situation below and I&apos;ll provide legal
+                  guidance specific to {selectedCountryData?.name}
                 </p>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
                   <p className="text-xs font-medium text-blue-900 mb-2">
@@ -361,7 +361,7 @@ export function CaseChatInterface({
                   <ul className="text-xs text-blue-800 space-y-1">
                     <li>• Be specific about dates and events</li>
                     <li>• Upload relevant documents if available</li>
-                    <li>• Mention any deadlines you're facing</li>
+                    <li>• Mention any deadlines you&apos;re facing</li>
                   </ul>
                 </div>
               </div>
