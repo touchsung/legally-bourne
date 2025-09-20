@@ -486,30 +486,32 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           caseType.title
         } matters in ${country.name}.
 
-🎯 **PRIMARY MISSION**: Analyze uploaded documents and provide specific, actionable legal guidance.
+**PRIMARY OBJECTIVE**: Analyze uploaded documents and deliver specific, actionable legal guidance.
 
-📋 **When Full Document Content is Available**:
-- READ the complete document thoroughly
-- QUOTE specific sections, clauses, and provisions
-- IDENTIFY potential legal issues, problematic language, or missing terms
-- REFERENCE exact document language when providing advice
-- HIGHLIGHT important dates, deadlines, obligations, and rights
-- EXPLAIN legal implications of specific clauses
-- SUGGEST improvements or areas of concern
+**DOCUMENT ANALYSIS APPROACH**:
 
-📋 **When Document Content is Limited**:
-- Guide users on how to share the relevant content
-- Ask targeted questions about their specific concerns
-- Provide general guidance based on the document type and context
+When full document content is available:
+- Read the complete document thoroughly
+- Quote specific sections, clauses, and provisions verbatim
+- Identify potential legal issues, problematic language, or missing terms
+- Reference exact document language when providing advice
+- Highlight critical dates, deadlines, obligations, and rights
+- Explain legal implications of specific clauses
+- Suggest improvements and flag areas of concern
 
-⚖️ **Legal Analysis Standards**:
-- Provide jurisdiction-specific guidance for ${country.name}
+When document content is limited:
+- Guide users on how to share relevant content
+- Ask targeted questions about specific concerns
+- Provide general guidance based on document type and context
+
+**LEGAL STANDARDS**:
+- Apply jurisdiction-specific guidance for ${country.name}
 - Focus on ${caseType.title.toLowerCase()} legal matters
-- Suggest practical next steps based on document analysis
+- Recommend practical next steps based on document analysis
 - Always clarify this is general guidance, not formal legal advice
-- Recommend consulting a qualified lawyer for complex matters or before signing anything
+- Advise consulting a qualified lawyer for complex matters or before signing documents
 
-💬 **Communication**: Use clear formatting, quote relevant document sections, be thorough yet accessible.`,
+**COMMUNICATION STYLE**: Use clear formatting, quote relevant sections, be thorough yet accessible.`,
       };
 
     const conversationMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =

@@ -8,11 +8,13 @@ import { ChatInput } from "@/components/chat/chat-input";
 import { QuickReferences } from "@/components/chat/quick-references";
 import { CaseSummary } from "@/components/chat/case-summary";
 import { toast } from "sonner";
-import { FileText } from "lucide-react";
+import { FileText, X, Menu, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type {
   CaseSummary as CaseSummaryType,
   SendMessageInput,
 } from "@/app/api/cases/schema";
+import { useRouter } from "next/navigation";
 
 interface Country {
   code: string;
@@ -73,8 +75,10 @@ export function CaseChatInterface({
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [summaryData, setSummaryData] = useState<CaseSummaryType | null>(null);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [showSummaryPanel, setShowSummaryPanel] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isGenerating = useRef(false);
+  const router = useRouter();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -156,7 +160,6 @@ export function CaseChatInterface({
     );
     setShowQuickReferences(!hasUserMessages);
 
-    // Load existing summary if available
     if (caseData.summary) {
       setSummaryData(caseData.summary);
     }
@@ -284,27 +287,59 @@ export function CaseChatInterface({
     mimetype: file.mimetype,
   }));
 
+  const handleBackToSelection = () => {
+    router.push("/chat");
+  };
+
   return (
-    <div className="flex h-full gap-6">
-      {/* Left Side - Chat */}
-      <div className="flex-1 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
-        <div className="bg-blue-50 p-4 border-b flex-shrink-0">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-sm font-semibold">AI</span>
+    <div className="flex flex-col lg:flex-row h-full gap-3 lg:gap-6">
+      {/* Main Chat Area */}
+      <div className="flex-1 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col min-h-0">
+        {/* Chat Header */}
+        <div className="bg-blue-50 p-3 sm:p-4 border-b flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackToSelection}
+                className="p-2 hover:bg-gray-100"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xs sm:text-sm font-semibold">
+                  AI
+                </span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-lg truncate">
+                  Legal Assistant Chat
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-600 truncate">
+                  {selectedCase?.title} • {selectedCountryData?.name}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 text-lg">
-                Legal Assistant Chat
-              </h3>
-              <p className="text-sm text-gray-600">
-                {selectedCase?.title} • {selectedCountryData?.name}
-              </p>
-            </div>
+
+            {/* Mobile Summary Toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSummaryPanel(!showSummaryPanel)}
+              className="lg:hidden ml-2 p-2"
+            >
+              {showSummaryPanel ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
+            </Button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0">
           {messages.length <= 1 && showQuickReferences && (
             <QuickReferences
               selectedCaseType={caseData.caseType}
@@ -323,11 +358,11 @@ export function CaseChatInterface({
           ))}
 
           {isLoading && (
-            <div className="flex gap-3 justify-start">
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+            <div className="flex gap-2 sm:gap-3 justify-start">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-white text-xs font-semibold">AI</span>
               </div>
-              <div className="bg-gray-100 rounded-lg px-4 py-2">
+              <div className="bg-gray-100 rounded-lg px-3 sm:px-4 py-2">
                 <div className="flex space-x-1">
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                   <div
@@ -345,6 +380,7 @@ export function CaseChatInterface({
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Input Area */}
         <div className="flex-shrink-0">
           <ChatInput
             caseId={caseData.id}
@@ -357,21 +393,46 @@ export function CaseChatInterface({
         </div>
       </div>
 
-      <div className="w-80 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col">
-        <div className="p-4 border-b bg-gray-50 flex-shrink-0">
+      {/* Summary Panel - Desktop: Always visible, Mobile: Overlay */}
+      <div
+        className={`
+          fixed lg:relative inset-0 lg:inset-auto z-50 lg:z-auto
+          lg:w-80 bg-white rounded-lg shadow-sm overflow-hidden flex flex-col
+          transition-transform duration-300 ease-in-out
+          ${
+            showSummaryPanel
+              ? "translate-x-0"
+              : "translate-x-full lg:translate-x-0"
+          }
+        `}
+      >
+        {/* Summary Header */}
+        <div className="p-3 sm:p-4 border-b bg-gray-50 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <FileText className="w-5 h-5 text-blue-600" />
-              <h3 className="font-semibold text-gray-900">
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+              <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
                 Legal Case Summary
               </h3>
             </div>
-            {isGeneratingSummary && (
-              <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            )}
+            <div className="flex items-center space-x-2">
+              {isGeneratingSummary && (
+                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              )}
+              {/* Mobile Close Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSummaryPanel(false)}
+                className="lg:hidden p-1"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
         </div>
 
+        {/* Summary Content */}
         <div className="flex-1 overflow-y-auto">
           <CaseSummary
             summaryData={summaryData}
@@ -379,6 +440,14 @@ export function CaseChatInterface({
           />
         </div>
       </div>
+
+      {/* Overlay for mobile summary panel */}
+      {showSummaryPanel && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setShowSummaryPanel(false)}
+        />
+      )}
     </div>
   );
 }

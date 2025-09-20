@@ -385,7 +385,7 @@ function TimelineItem({
 
 function CaseSummaryPlaceholder() {
   return (
-    <div className="h-full overflow-y-auto flex items-center">
+    <div className="h-full overflow-y-auto flex items-center justify-center">
       <div className="p-2 xs:p-3 sm:p-4 lg:p-6 flex justify-center">
         <div className="flex flex-col items-center justify-center h-32 xs:h-40 sm:h-48 md:h-64">
           <div className="w-10 h-10 xs:w-12 xs:h-12 sm:w-16 sm:h-16 bg-blue-50 rounded-full flex items-center justify-center mb-2 xs:mb-3 sm:mb-4">

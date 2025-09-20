@@ -6,9 +6,8 @@ import { useSession } from "next-auth/react";
 import { ClientNavbar } from "@/components/layout/client-navbar";
 import { Footer } from "@/components/layout/footer";
 import { CaseChatInterface } from "@/components/chat/case-chat-interface";
-import { Loader2, AlertCircle, ArrowLeft } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import type { GetCaseResponse } from "@/app/api/cases/schema";
 import countries from "@/data/countries.json";
 import { caseTypes } from "@/data/case-types";
@@ -107,10 +106,6 @@ export default function CaseChatPage() {
     }
   };
 
-  const handleBackToSelection = () => {
-    router.push("/chat");
-  };
-
   const selectedCase = caseData
     ? caseTypes.find((type) => type.id === caseData.caseType)
     : null;
@@ -165,24 +160,6 @@ export default function CaseChatPage() {
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       <ClientNavbar />
-
-      <div className="bg-white border-b px-4 sm:px-6 lg:px-8 py-4 flex-shrink-0">
-        <div className="max-w-7xl mx-auto flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleBackToSelection}
-            className="p-2 hover:bg-gray-100"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">
-              {caseData.title}
-            </h1>
-          </div>
-        </div>
-      </div>
 
       <div className="flex-1 min-h-0">
         <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
