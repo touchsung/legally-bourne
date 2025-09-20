@@ -277,7 +277,7 @@ export function QuickReferences({
             <button
               key={index}
               onClick={() => onQuestionSelect(ref.question)}
-              className="text-left p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all text-sm text-gray-700 hover:text-blue-700 group"
+              className=" cursor-pointer text-left p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all text-sm text-gray-700 hover:text-blue-700 group"
             >
               <span className="text-blue-600 font-medium text-xs mr-2">
                 {ref.category}:
@@ -286,12 +286,6 @@ export function QuickReferences({
             </button>
           ))}
         </div>
-
-        {questions.length > 4 && (
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            + {questions.length - 4} more questions available
-          </p>
-        )}
       </div>
     </div>
   );
