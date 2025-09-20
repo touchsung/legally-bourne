@@ -258,45 +258,40 @@ export function QuickReferences({
 
   return (
     <div className="mb-4">
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="text-sm font-medium text-gray-700 mb-3">
-          Quick References
-        </h3>
-        <div className="space-y-2">
-          {questions.map((ref, index) => (
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+            <span className="text-white text-sm">💡</span>
+          </div>
+          <h3 className="text-sm font-semibold text-gray-900">
+            Common Questions for This Case Type
+          </h3>
+        </div>
+
+        <p className="text-xs text-gray-600 mb-3">
+          Click any question to get started, or type your own below
+        </p>
+
+        <div className="grid grid-cols-1 gap-2">
+          {questions.slice(0, 4).map((ref, index) => (
             <button
               key={index}
               onClick={() => onQuestionSelect(ref.question)}
-              className="w-full text-left p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors text-sm text-gray-700 hover:text-blue-700"
+              className="text-left p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all text-sm text-gray-700 hover:text-blue-700 group"
             >
-              {ref.question}
+              <span className="text-blue-600 font-medium text-xs mr-2">
+                {ref.category}:
+              </span>
+              <span className="group-hover:underline">{ref.question}</span>
             </button>
           ))}
         </div>
-        {/* 
-        <div className="mt-4">
-          <p className="text-xs text-gray-500 mb-2">
-            Or explore these services:
+
+        {questions.length > 4 && (
+          <p className="text-xs text-gray-500 mt-2 text-center">
+            + {questions.length - 4} more questions available
           </p>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() =>
-                onQuestionSelect("I need help drafting a legal letter")
-              }
-              className="p-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-            >
-              📄 Legal Letter
-            </button>
-            <button
-              onClick={() =>
-                onQuestionSelect("I need to create a timeline for my case")
-              }
-              className="p-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-            >
-              📅 Case Timeline
-            </button>
-          </div>
-        </div> */}
+        )}
       </div>
     </div>
   );
