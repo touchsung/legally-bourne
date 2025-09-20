@@ -79,6 +79,7 @@ export function CaseChatInterface({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isGenerating = useRef(false);
   const router = useRouter();
+  const isFreshCase = messages.length === 0;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -340,6 +341,32 @@ export function CaseChatInterface({
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4 min-h-0">
+          {isFreshCase && (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center max-w-md px-4">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FileText className="w-8 h-8 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Ready to Help with Your {selectedCase?.title}
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Describe your situation below and I'll provide legal guidance
+                  specific to {selectedCountryData?.name}
+                </p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+                  <p className="text-xs font-medium text-blue-900 mb-2">
+                    Quick Start Tips:
+                  </p>
+                  <ul className="text-xs text-blue-800 space-y-1">
+                    <li>• Be specific about dates and events</li>
+                    <li>• Upload relevant documents if available</li>
+                    <li>• Mention any deadlines you're facing</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
           {messages.length <= 1 && showQuickReferences && (
             <QuickReferences
               selectedCaseType={caseData.caseType}
@@ -384,6 +411,7 @@ export function CaseChatInterface({
         <div className="flex-shrink-0">
           <ChatInput
             caseId={caseData.id}
+            caseType={caseData.caseType}
             onSendMessage={handleSendMessage}
             isLoading={isLoading}
             disabled={!session?.user}

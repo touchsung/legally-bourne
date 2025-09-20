@@ -10,7 +10,6 @@ import {
   Building2,
   Plane,
   Scale,
-  HelpCircle,
   User,
   Briefcase,
   Globe,
@@ -111,19 +110,31 @@ export const caseGroups = [
       },
     ],
   },
-  {
-    id: "other",
-    title: "Other",
-    icon: HelpCircle,
-    types: [
-      {
-        id: "other",
-        icon: HelpCircle,
-        title: "Other",
-        description: "Describe your specific legal issue",
-      },
-    ],
-  },
 ];
 
 export const caseTypes = caseGroups.flatMap((group) => group.types);
+
+export const casePlaceholders: Record<string, string> = {
+  "family-personal":
+    "Describe your family or personal legal issue (e.g., 'I want to file for divorce' or 'There's a dispute over inheritance')...",
+  "housing-tenancy":
+    "Describe your housing or tenancy issue (e.g., 'My landlord refused to return my deposit' or 'I'm facing eviction')...",
+  "accident-insurance":
+    "Describe your accident or insurance issue (e.g., 'I was in a car accident and need help with my claim')...",
+  "consumer-ecommerce":
+    "Describe your consumer or e-commerce issue (e.g., 'I ordered online but received a fake product')...",
+  "employment-workplace":
+    "Describe your employment issue (e.g., 'My employer hasn't paid my salary for 2 months' or 'I was fired without notice')...",
+  "client-non-payment":
+    "Describe the non-payment issue (e.g., 'I completed the work but client refuses to pay')...",
+  "freelance-platform":
+    "Describe your freelance platform issue (e.g., 'Client on Upwork didn't pay after I delivered the project')...",
+  "loans-financial":
+    "Describe your loan or financial issue (e.g., 'I can't pay my credit card debt' or 'Bank is charging unfair penalties')...",
+  "business-corporate":
+    "Describe your business issue (e.g., 'Partner isn't honoring our agreement' or 'Contract dispute with supplier')...",
+  "visa-immigration":
+    "Describe your visa or immigration issue (e.g., 'My visa was cancelled by employer' or 'I overstayed my visa')...",
+  "criminal-civil":
+    "Describe your case (e.g., 'I need help with a court appeal' or 'I was charged with a crime I didn't commit')...",
+};

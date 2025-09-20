@@ -5,6 +5,7 @@ import { useState, KeyboardEvent, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Send, Loader2, Paperclip, X, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { casePlaceholders } from "@/data/case-types";
 
 interface AttachedFile {
   id: string;
@@ -22,6 +23,7 @@ interface UploadedFile {
 
 interface ChatInputProps {
   caseId: string;
+  caseType?: string;
   onSendMessage: (message: string, fileIds?: string[]) => void;
   isLoading: boolean;
   disabled?: boolean;
@@ -43,6 +45,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export function ChatInput({
   caseId,
+  caseType,
   onSendMessage,
   isLoading,
   disabled,
@@ -56,6 +59,10 @@ export function ChatInput({
   const [dragOver, setDragOver] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const placeholder =
+    caseType && casePlaceholders[caseType]
+      ? casePlaceholders[caseType]
+      : "Describe your legal issue in detail...";
 
   const handleFileUploaded = useCallback(
     (file: UploadedFile) => {
@@ -430,13 +437,7 @@ export function ChatInput({
               adjustTextareaHeight();
             }}
             onKeyDown={handleKeyPress}
-            placeholder={
-              uploading
-                ? "Uploading file..."
-                : selectedFiles.length > 0
-                ? "Add a message or send files directly..."
-                : "Type your message..."
-            }
+            placeholder={uploading ? "Uploading file..." : placeholder}
             className="flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
             rows={1}
             style={{
